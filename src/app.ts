@@ -24,7 +24,7 @@ function createOrLoadGame(filename?: string): Game {
   // forward events to socket.io and setup autosave
   game.pubsub.on('*', (game: Game, ...args:any[]) => {
     save(game);
-    io.to(`game-${game.getId()}`).emit(this.event, game.getState(), ...args);
+    io.to(`game-${game.getId()}`).emit((<any> game.pubsub).event, game.getState(), ...args);
   });
   games[game.getId()] = game;
   return game;

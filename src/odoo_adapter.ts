@@ -101,7 +101,6 @@ export class OdooAdapter {
         // TODO: listen for checkrequests
         // TODO: emit errors, logs
     }
-    /*
 
     async stateListener(game: Game, params: { from: string, to: string, payload: any }) {
         this.gameState = game.getState();
@@ -458,15 +457,12 @@ export class OdooAdapter {
         });
     }
 
-    */
-
     /*
     *
     * SUPPLY
     *
     */
 
-/*
     async updateSupplierProductPrice(partnerId: number, productId: number, price: number): Promise<any> {
         return this.execute((resolve, reject) => {
             this.odoo.update('product.product', productId, {
@@ -649,7 +645,6 @@ export class OdooAdapter {
             }, this.createDefaultResponseHandler(resolve, reject));
         });
     }
-    */
 
     /*
     *
@@ -657,7 +652,6 @@ export class OdooAdapter {
     *
     */
 
-/*
     async updateSalesProductPrice(productId: number, price: number): Promise<any> {
         return this.execute((resolve, reject) => {
             this.odoo.update('product.product', productId, {
@@ -837,7 +831,6 @@ export class OdooAdapter {
         });
         this.updateStockMoveDate(['|', ['production_id', '=', moId], ['raw_material_production_id', '=', moId]], currentDayTime);
     }
-    */
 
 }
 /*
@@ -849,7 +842,6 @@ let odooAdapter:OdooAdapter = game.addCompany('A1', {
     password: '12345678'
 });
 */
-
 
 
 // TODO: read accounts?

@@ -60,15 +60,18 @@ export class Game {
     private nextState: Function;
     private state: GameState;
     private odooAdapters: OdooAdapter[] = [];
+    private id: string;
 
     constructor () {
         this.pubsub = new EventEmitter2({
             wildcard: true
         });
+        this.id = uuid.v4();
     }
 
     loadFromJson(json: string) {
         this.state = JSON.parse(json);
+        this.id = this.state.id;
         if (typeof (<any>this)[this.state.nextState] === 'function') {
             this.nextState = (<any>this)[this.state.nextState];
         }
@@ -107,7 +110,7 @@ export class Game {
 
     start(name: string) {
         this.state = {
-            id: uuid.v4(),
+            id: this.id,
             description: name,
             startDate: new Date().toISOString(),
 
@@ -136,7 +139,7 @@ export class Game {
     }
 
     getId():string {
-        return this.state.id;
+        return this.id;
     }
 
     next():string {

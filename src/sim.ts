@@ -80,7 +80,7 @@ export class Game {
             (<any>this)[this.state.currentState]();
         }
         this.odooAdapters.forEach((a) => {
-            //a.destroy();
+            a.destroy();
         });
         this.odooAdapters = [];
         this.state.companies.forEach(this.createCompanyOdooAdapter);

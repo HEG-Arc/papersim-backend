@@ -98,8 +98,8 @@ export class OdooAdapter {
             password: company.odoo.password,
             protocol: 'https'
         });
-        //this.checkConfig();
-        //this.game.pubsub.on('state', this.stateListener);
+        this.checkConfig();
+        game.pubsub.on('state', this.stateListener.bind(this));
         // TODO: listen for checkrequests
         // TODO: emit errors, logs
     }
@@ -472,14 +472,14 @@ export class OdooAdapter {
 
     async updateSupplierProductPrice(partnerId: number, productId: number, price: number): Promise<any> {
         return this.execute((resolve, reject) => {
-            this.odoo.update('product.product', productId, {
+            this.odoo.update('product.template', productId, {
                 'seller_ids': [
                     [0, false, {
                         name: partnerId,
                         delay: this.gameState.supplierDayToPay,
                         price: price,
-                        date_start: this.gameState.currentDay,
-                        date_end: this.gameState.currentDay
+                        date_start: this.currentDay,
+                        date_end: this.currentDay
                     }]]
             }, this.createDefaultResponseHandler(resolve, reject));
         });
@@ -674,6 +674,7 @@ export class OdooAdapter {
             partner_shipping_id: customerId,
             date_order: this.currentDayTime,
             validity_date: this.currentDay,
+            state: 'sent',
             order_line: [[0, false,
             {
                 price_unit: price,
@@ -841,6 +842,9 @@ export class OdooAdapter {
 
 }
 
+
+/*
+TEST
 let game = new Game();
 game.start('test');
 let odooAdapter:OdooAdapter = game.addCompany('A1', {
@@ -849,9 +853,10 @@ let odooAdapter:OdooAdapter = game.addCompany('A1', {
     password: '12345678'
 });
 
-odooAdapter.updateGameStateAndDay(game);
-//odooAdapter.createConfig();
-odooAdapter.checkConfig();
 
+odooAdapter.updateGameStateAndDay(game);
+odooAdapter.createConfig();
+odooAdapter.checkConfig();
+*/
 
 // TODO: read accounts?

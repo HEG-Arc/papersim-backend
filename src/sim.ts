@@ -83,7 +83,7 @@ export class Game {
             a.destroy();
         });
         this.odooAdapters = [];
-        this.state.companies.forEach(this.createCompanyOdooAdapter);
+        this.state.companies.forEach(this.createCompanyOdooAdapter.bind(this));
         this.pubsub.emit(`state`, this, {from: 'json', to: this.state.currentState});
     }
 

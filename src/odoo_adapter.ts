@@ -1,7 +1,7 @@
 /// <reference path="typings/odoo.d.ts"/>
 import { Game, Company, GameState } from './sim';
 import * as fs from 'fs';
-import { Odoo } from 'odoo';
+import Odoo = require('odoo');
 
 // TODO: How are date input calculated??? GMT Offset...
 /*
@@ -20,6 +20,7 @@ function objectToDomain(obj: Object) {
 }
 
 function simDayToDateTime(day:number):string {
+     day = Math.max(day, 0);
      return '2016-01-' + ('00' + (day + 1)).slice(-2) + ' 00:00:00';
 }
 
@@ -53,7 +54,7 @@ let productWood: any = {
     sale_ok: false,
     purchase_ok: true,
     type: 'product',
-    purchase_method: 'receive',
+    //FIX: change in Odoo10? purchase_method: 'receive',
     taxes_id: [],  // disable tax
     supplier_taxes_id: []
 };
@@ -64,7 +65,7 @@ let productPaper: any = {
     sale_ok: true,
     purchase_ok: false,
     type: 'product',
-    purchase_method: 'receive',
+    //FIX: change in Odoo10?  purchase_method: 'receive',
     taxes_id: [],
     supplier_taxes_id: [],
     warranty: 0,
@@ -94,7 +95,8 @@ export class OdooAdapter {
             port: 443,
             database: company.odoo.database,
             username: company.odoo.username,
-            password: company.odoo.password
+            password: company.odoo.password,
+            protocol: 'https'
         });
         //this.checkConfig();
         //this.game.pubsub.on('state', this.stateListener);
@@ -102,10 +104,15 @@ export class OdooAdapter {
         // TODO: emit errors, logs
     }
 
-    async stateListener(game: Game, params: { from: string, to: string, payload: any }) {
+    updateGameStateAndDay(game: Game) {
         this.gameState = game.getState();
         this.currentDayTime = simDayToDateTime(this.gameState.currentDay);
-        this.currentDay = this.currentDayTime.slice(10);
+        this.currentDay = this.currentDayTime.slice(0, 10);
+        console.log(this.gameState, this.currentDayTime, this.currentDay);
+    }
+
+    async stateListener(game: Game, params: { from: string, to: string, payload: any }) {
+        this.updateGameStateAndDay(game);
         switch (params.to) {
             // TODO error handling
             case 'decidingMarketPriceState':
@@ -205,6 +212,9 @@ export class OdooAdapter {
         return (err, result) => {
             this.createDefaultResponseHandler(() => { }, () => { })(err, result);
             let key = typeof obj === 'string' ? obj : obj.name;
+            if (!result) {
+                return reject(`ERR null response: ${key}`);
+            }
             if (result.hasOwnProperty('length')) {
                 if (result.length > 0) {
                     result = result[0];
@@ -221,7 +231,7 @@ export class OdooAdapter {
         return {
             product_tmpl_id: paperId,
             product_qty: this.gameState.productionRawToFinished,
-            product_uom: 1,
+            //FIX: change in Odoo10? product_uom: 1,
             bom_line_ids: [[0, false, {
                 product_qty: 1,
                 product_uom: 1,
@@ -233,9 +243,6 @@ export class OdooAdapter {
     }
 
     async createConfig() {
-        this.gameState = this.game.getState();
-        this.currentDayTime = simDayToDateTime(0);
-        this.currentDay = this.currentDayTime.slice(10);
         try {
             await this.createPartner(partnerSupplier);
             await this.createPartner(partnerMarket);
@@ -833,15 +840,18 @@ export class OdooAdapter {
     }
 
 }
-/*
+
 let game = new Game();
 game.start('test');
 let odooAdapter:OdooAdapter = game.addCompany('A1', {
-    database: 'edu-paper',
+    database: 'edu-paper1',
     username: 'edu-paper@mailinator.com',
     password: '12345678'
 });
-*/
+
+odooAdapter.updateGameStateAndDay(game);
+//odooAdapter.createConfig();
+odooAdapter.checkConfig();
 
 
 // TODO: read accounts?

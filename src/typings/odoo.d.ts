@@ -6,6 +6,7 @@ declare module 'odoo' {
         database: string;
         username: string;
         password: string;
+        protocol?: string;
     }
 
     interface SearchParams {
@@ -26,7 +27,7 @@ declare module 'odoo' {
         fields?: string[];
     }
 
-    export class Odoo {
+    class Odoo {
         constructor(config: OdooConfig)
         connect(callback: (error: Error, result: any) => void):void;
         search(model: string, params: SearchParams, callback: (error: Error, result: any) => void):void;
@@ -42,4 +43,6 @@ declare module 'odoo' {
         public sid:string;
         public session_id:string;
     }
+
+    export = Odoo;
 }

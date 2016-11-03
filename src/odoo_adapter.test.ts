@@ -18,7 +18,8 @@ odooAdapter.updateGameStateAndDay(game);
 async function test(){
     await setup();
     //await testSales();
-    await testSupply();
+    //await testSupply();
+    testMrp();
 }
 
 async function setup(){
@@ -65,6 +66,9 @@ async function testSupply(){
     await odooAdapter.paySupplierInvoice(invoiceId);
     console.log('lockPurchaseOrder');
     await odooAdapter.lockPurchaseOrder(poId);
+}
+
+async function testMrp(){
     console.log('produce');
     await odooAdapter.produce('2016-01-01', 1, 6);
 }

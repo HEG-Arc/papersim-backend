@@ -833,12 +833,13 @@ export class OdooAdapter {
     }
 
     async produce(currentDayTime:string, quantitySource: number, quantityProduced: number): Promise<any> {
-        // TODO: add Promise return
+        //TODO return promise?
+
         // create production
         let mo:any = {
             product_id: this.cache[productPaper.name],
             product_qty: quantityProduced,
-            //product_uom: 1,
+            product_uom_id: 1,
             bom_id: this.cache['BOM'],
             date_planned: currentDayTime
         };
@@ -847,50 +848,76 @@ export class OdooAdapter {
             this.odoo.create('mrp.production', mo, this.createDefaultResponseHandler(resolve, reject));
         });
         console.log('moId', moId);
-        await this.execute((resolve, reject) => {
-            this.odoo.rpc_call('/web/dataset/exec_workflow', {
-                model: 'mrp.production',
-                id: moId,
-                signal: 'button_confirm'
-            }, this.createDefaultResponseHandler(resolve, reject));
-        });
-        // reserve
+
+        // reserve (button checkavailability)
         await this.execute((resolve, reject) => {
             this.odoo.rpc_call('/web/dataset/call_button', {
                 model: 'mrp.production',
-                method: 'force_production',
+                method: 'action_assign',
                 args: [[moId]]
             }, this.createDefaultResponseHandler(resolve, reject));
         });
         // produce
         let produceId = await this.execute((resolve, reject) => {
+            this.odoo.context.active_model =  "mrp.production";
+		    this.odoo.context.active_id =  moId;
+		    this.odoo.context.active_ids =  moId;
             this.odoo.create('mrp.product.produce', {
-                //mode: 'consume_produce',
-		        product_qty: quantityProduced,
-		        product_id: this.cache[productPaper.name],
-                consume_lines: [[0, false, { // could/should read stock mouvements?? or other?
-                    product_id: this.cache[productWood.name],
-                    product_qty: quantitySource
-                }]]
+                serial: false,
+			    production_id: moId,
+			    product_qty: quantityProduced,
+			    product_tracking: 'none',
+			    lot_id: false,
+			    consume_line_ids: []
             }, this.createDefaultResponseHandler(resolve, reject));
         });
+        delete this.odoo.context.active_model;
+		delete this.odoo.context.active_id;
+		delete this.odoo.context.active_ids;
+        console.log('produceId', produceId);
+        //produce button
         await this.execute((resolve, reject) => {
+
             this.odoo.rpc_call('/web/dataset/call_button', {
                 model: 'mrp.product.produce',
                 method: 'do_produce',
-                args: [[produceId], {
-                active_id: moId
-                }]
+                args: [[produceId]]
             }, this.createDefaultResponseHandler(resolve, reject));
         });
+
         // update dates
+        console.log('update dates');
         await this.execute((resolve, reject) => {
             this.odoo.update('mrp.production', moId, {
                 date_start: currentDayTime,
                 date_finished: currentDayTime
             }, this.createDefaultResponseHandler(resolve, reject));
         });
-        this.updateStockMoveDate(['|', ['production_id', '=', moId], ['raw_material_production_id', '=', moId]], currentDayTime);
+        //postinventorybutton
+        console.log('post inventory');
+        await this.execute((resolve, reject) => {
+            this.odoo.rpc_call('/web/dataset/call_button', {
+                model: 'mrp.production',
+                method: 'post_inventory',
+                args: [[moId]]
+            }, this.createDefaultResponseHandler(resolve, reject));
+        });
+
+        //buttondone
+        console.log('production done');
+        await this.execute((resolve, reject) => {
+            this.odoo.rpc_call('/web/dataset/call_button', {
+                model: 'mrp.production',
+                method: 'button_mark_done',
+                args: [[moId]]
+            }, this.createDefaultResponseHandler(resolve, reject));
+        });
+
+        console.log('update stockMove dates');
+        await this.updateStockMoveDate(['|', ['production_id', '=', moId], ['raw_material_production_id', '=', moId]], currentDayTime);
+
+
+
     }
 
 }

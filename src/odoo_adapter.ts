@@ -554,12 +554,16 @@ export class OdooAdapter {
                     this.odoo.get('purchase.order', {ids: [poId]}, this.createDefaultResponseHandler(resolve, reject));
                 });
                 if (po[0] && po[0].state === 'purchase') {
-                    // TODO: check price & qty
-                    console.log('TODO: extract qty from po: ', po);
-                    // order_line: [ 5 ],
-                    let qty = 1;
-                    this.game.input(this.company.name, qty);
-                    resolve(poId);
+                    // get qty from order
+                    this.odoo.get('purchase.order.line', {ids: po[0].order_line}, (err, res) => {
+                        // FIX for now only take first line
+                        if (err) { return reject(err); }
+                        let qty = res[0].product_qty
+                        console.log('PO qty', qty);
+                        // checks done in sim.
+                        this.game.input(this.company.name, qty);
+                        resolve(poId);
+                    });
                 } else {
                     // TODO: auto cancel po?
                     console.log('TODO: auto cancel po?');
@@ -740,12 +744,16 @@ export class OdooAdapter {
                     this.odoo.get('sale.order', {ids: [soId]}, this.createDefaultResponseHandler(resolve, reject));
                 });
                 if (so[0] && so[0].state === 'sale') {
-                    // TODO: check price & qty
-                    console.log('TODO: extract qty from so: ', so);
-                    // read orderline so[0].order_line: [ 5 ]
-                    let qty = 1;
-                    this.game.input(this.company.name, qty);
-                    resolve(soId);
+                    // get qty from order
+                    this.odoo.get('sale.order.line', {ids: so[0].order_line}, (err, res) => {
+                        // FIX for now only take first line
+                        if (err) { return reject(err); }
+                        let qty = res[0].product_uom_qty
+                        console.log('SO qty', qty);
+                        // checks done in sim.
+                        this.game.input(this.company.name, qty);
+                        resolve(soId);
+                    });
                 } else {
                     // TODO: auto cancel so?
                     console.log('TODO: auto cancel so?');
@@ -778,6 +786,7 @@ export class OdooAdapter {
                 deposit_taxes_id: []
             }, (err: any, m: any) => {
                 if (err) { return reject(err); }
+                    console.log('create invoice');
                     this.odoo.rpc_call('/web/dataset/call_button', {
                     model: 'sale.advance.payment.inv',
                     method: 'create_invoices',
@@ -788,22 +797,12 @@ export class OdooAdapter {
                 }, (err: any, res: any) => {
                     if (err) { return reject(err); }
                     let invId = res.res_id;
-                    /* odoo 9 workflow */
-                    /*
-                    this.odoo.rpc_call('/web/dataset/exec_workflow', {
-                        model: 'account.invoice',
-                        id: invId,
-                        signal: 'invoice_open'
-                    }, (err: any, res: any) => {
-                        if (err) { return reject(err); }
-                        this.createDefaultResponseHandler(resolve, reject)(err, invId);
-                    });
-                    */
                     // odoo 10 action
+                     console.log('open invoice');
                      this.odoo.rpc_call('/web/dataset/call_button', {
                         model: 'account.invoice',
                         method: 'action_invoice_open',
-                        args: [[ m ]]
+                        args: [[ soId ]]
                         }, (err: any, res: any) => {
                             this.createDefaultResponseHandler(resolve, reject)(err, invId);
                         });

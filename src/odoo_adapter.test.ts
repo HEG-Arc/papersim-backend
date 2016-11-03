@@ -17,12 +17,12 @@ odooAdapter.updateGameStateAndDay(game);
 
 async function test(){
     await setup();
-    await testSales();
-    //await testSupply();
+    //await testSales();
+    await testSupply();
 }
 
 async function setup(){
-    // TODO checkOrUpdate
+    // TODO: checkOrUpdate
     //await odooAdapter.createConfig();
     await odooAdapter.checkConfig();
 }
@@ -55,7 +55,7 @@ async function testSupply(){
 
     console.log('acceptingPurchasesState');
     poId = await odooAdapter.readAndCheckPo(poId);
-    console.log('poId');
+    console.log('poId', poId);
     console.log('deliveringPurchasesState');
     await odooAdapter.deliverSupplies(poId);
     console.log('createPurchaseInvoice');
@@ -63,6 +63,8 @@ async function testSupply(){
     console.log('invoiceId', invoiceId);
     console.log('paySupplierInvoice');
     await odooAdapter.paySupplierInvoice(invoiceId);
+    console.log('lockPurchaseOrder');
+    await odooAdapter.lockPurchaseOrder(poId);
     console.log('produce');
     await odooAdapter.produce('2016-01-01', 1, 6);
 }

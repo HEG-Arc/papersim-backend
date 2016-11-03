@@ -170,7 +170,8 @@ export class OdooAdapter {
                     let invoiceId: number = await this.createPurchaseInvoice(this.cacheDailyPoId[params.payload.supplyForPurchaseDay],
                             qty, params.payload.price);
                     await this.paySupplierInvoice(invoiceId);
-                    // produce newdelivered qty
+                    await this.lockPurchaseOrder(this.cacheDailyPoId[params.payload.supplyForPurchaseDay]);
+                    // produce new delivered qty
                     await this.produce(this.currentDay, qty, qty * this.gameState.productionRawToFinished);
                 }
                 break;
@@ -498,19 +499,23 @@ export class OdooAdapter {
                 product_qty: this.gameState.supplierMaxOrderSize,
                 product_uom: 1,
                 price_unit: price,
-                taxes_id: []
+                taxes_id: [],
+                name: productWood.name // TODO: as parameter // description field in PO
             }]],
             date_planned: datePlanned
         };
         return this.execute((resolve, reject) => {
             this.odoo.create('purchase.order', po, (err, poId) => {
-                this.createDefaultResponseHandler(resolve, reject)(err, poId);
                 if (this.config.autoCommitPo) {
                      this.odoo.rpc_call('/web/dataset/call_button', {
                         model: 'purchase.order',
                         method: 'button_confirm',
                         args: [[poId]]
-                    }, (err, res) => {});
+                    }, (err, res) => {
+                        this.createDefaultResponseHandler(resolve, reject)(err, poId);
+                    });
+                } else {
+                    this.createDefaultResponseHandler(resolve, reject)(err, poId);
                 }
             });
         });
@@ -548,14 +553,16 @@ export class OdooAdapter {
                 let po: any = await this.execute((resolve, reject) => {
                     this.odoo.get('purchase.order', {ids: [poId]}, this.createDefaultResponseHandler(resolve, reject));
                 });
-                if (po && po.state === 'purchase') {
+                if (po[0] && po[0].state === 'purchase') {
                     // TODO: check price & qty
                     console.log('TODO: extract qty from po: ', po);
+                    // order_line: [ 5 ],
                     let qty = 1;
                     this.game.input(this.company.name, qty);
                     resolve(poId);
                 } else {
                     // TODO: auto cancel po?
+                    console.log('TODO: auto cancel po?');
                     resolve(null);
                 }
             } catch(e) {
@@ -573,7 +580,7 @@ export class OdooAdapter {
             ]
             }, this.createDefaultResponseHandler(resolve, reject));
         });
-        return this.validatePicking(pickingId);
+        return this.validatePicking(pickingId[0]);
     }
 
     async createPurchaseInvoice(poId: number, qty: number, price: number): Promise<any> {
@@ -588,7 +595,7 @@ export class OdooAdapter {
                 invoice_line_ids: [[0, false,
                     {
                         purchase_id: poId,
-                        //name: 'PO00009: Test',
+                        name: 'PO' + zeroPadding(poId),
                         price_unit: price,  // from sim for now
                         uom_id: 1,
                         invoice_line_tax_ids: [],
@@ -602,7 +609,10 @@ export class OdooAdapter {
                 date: this.currentDay
             }, (err, invoiceId) => {
                 // workflow validate invoice
+                console.log('invoice created', err, invoiceId);
                 if (err) return reject(err);
+                /* odoo 9 workflow */
+                /*
                 this.odoo.rpc_call('/web/dataset/exec_workflow', {
                     model: 'account.invoice',
                     id: invoiceId,
@@ -610,6 +620,14 @@ export class OdooAdapter {
                 }, (err: any, res: any) => {
                     this.createDefaultResponseHandler(resolve, reject)(err, invoiceId);
                 });
+                */
+                this.odoo.rpc_call('/web/dataset/call_button', {
+                    model: 'account.invoice',
+                    method: 'action_invoice_open',
+                    args: [[ invoiceId ]]
+                    }, (err: any, res: any) => {
+                        this.createDefaultResponseHandler(resolve, reject)(err, invoiceId);
+                    });
             });
         });
     }
@@ -636,22 +654,31 @@ export class OdooAdapter {
 
 
     async paySupplierInvoice(invoiceId: number): Promise<any> {
-        let paymentId = await this.makePayment({
-            payment_type: 'outbound',
-            partner_type: 'supplier',
-            partner_id: this.cache[partnerSupplier.name],
-            journal_id: this.cache['BILL'],
-            payment_method_id: 1, // TODO: lookup cash?
-            amount: 4, // from invoice or sim??
-            payment_date: this.currentDay,
-            communication: 'BILL/2016/' + zeroPadding(invoiceId),
+        return this.execute((resolve, reject) => {
+            this.odoo.get('account.invoice', {ids: [invoiceId], fields: ['number']}, (err, res) => {
+                if (err) { return reject(err); }
+                this.makePayment({
+                    payment_type: 'outbound',
+                    partner_type: 'supplier',
+                    partner_id: this.cache[partnerSupplier.name],
+                    journal_id: this.cache['BILL'],
+                    payment_method_id: 1, // TODO: lookup cash?
+                    amount: 10, // TODO: from invoice or sim??
+                    payment_date: this.currentDay,
+                    communication: res[0].number,
+                    invoice_ids: [[4, invoiceId, null]]
+                }).then(resolve, reject);
+            });
         });
+    }
+
+    async lockPurchaseOrder(poId: number): Promise<any> {
         return this.execute((resolve, reject) => {
             // lock invoice
             this.odoo.rpc_call('/web/dataset/call_button', {
                 model: 'purchase.order',
                 method: 'button_done',
-                args: [[paymentId]]
+                args: [[poId]]
             }, this.createDefaultResponseHandler(resolve, reject));
         });
     }
@@ -811,7 +838,7 @@ export class OdooAdapter {
         let mo:any = {
             product_id: this.cache[productPaper.name],
             product_qty: quantityProduced,
-            product_uom: 1,
+            //product_uom: 1,
             bom_id: this.cache['BOM'],
             date_planned: currentDayTime
         };
@@ -819,6 +846,7 @@ export class OdooAdapter {
         let moId = await this.execute((resolve, reject) => {
             this.odoo.create('mrp.production', mo, this.createDefaultResponseHandler(resolve, reject));
         });
+        console.log('moId', moId);
         await this.execute((resolve, reject) => {
             this.odoo.rpc_call('/web/dataset/exec_workflow', {
                 model: 'mrp.production',
@@ -837,7 +865,7 @@ export class OdooAdapter {
         // produce
         let produceId = await this.execute((resolve, reject) => {
             this.odoo.create('mrp.product.produce', {
-                mode: 'consume_produce',
+                //mode: 'consume_produce',
 		        product_qty: quantityProduced,
 		        product_id: this.cache[productPaper.name],
                 consume_lines: [[0, false, { // could/should read stock mouvements?? or other?

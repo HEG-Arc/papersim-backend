@@ -17,9 +17,9 @@ odooAdapter.updateGameStateAndDay(game);
 
 async function test(){
     await setup();
-    //await testSales();
-    //await testSupply();
-    testMrp();
+    await testSales();
+    await testSupply();
+    await testMrp();
 }
 
 async function setup(){
@@ -74,9 +74,10 @@ async function testMrp(){
 }
 
 test();
+
 /*
 setup().then(()=>{
-    odooAdapter.odoo.get('account.invoice', {ids: [5], fields: ['number']}, (err, res) => {
+    odooAdapter.odoo.get('purchase.order.line', {ids: [5]}, (err, res) => {
         console.log(err, res);
     });
 });

@@ -67,6 +67,7 @@ export class Game {
             wildcard: true
         });
         this.id = uuid.v4();
+        this.input = () => { return; };
     }
 
     loadFromJson(json: string) {

@@ -80,11 +80,12 @@ export class OdooAdapter {
         autoCommitSo: true
     };
 
+    public cache: any = {};
+    public cacheDailyPoId: number[] = [];
+    public cacheDailySoId: number[] = [];
+    public cacheDailyCustomerInvoiceId: number[] = [];
+
     private odoo: Odoo;
-    private cache: any = {};
-    private cacheDailyPoId: number[] = [];
-    private cacheDailySoId: number[] = [];
-    private cacheDailyCustomerInvoiceId: number[] = [];
     private gameState: GameState;
     private currentDay: string;
     private currentDayTime: string;
@@ -842,21 +843,5 @@ export class OdooAdapter {
 
 }
 
-
-/*
-TEST
-let game = new Game();
-game.start('test');
-let odooAdapter:OdooAdapter = game.addCompany('A1', {
-    database: 'edu-paper1',
-    username: 'edu-paper@mailinator.com',
-    password: '12345678'
-});
-
-
-odooAdapter.updateGameStateAndDay(game);
-odooAdapter.createConfig();
-odooAdapter.checkConfig();
-*/
 
 // TODO: read accounts?

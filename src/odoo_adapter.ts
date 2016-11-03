@@ -30,7 +30,7 @@ function zeroPadding(number: number): string {
 
 // Game configs
 
-let partnerSupplier = {
+export let partnerSupplier = {
     name: 'Scierie Sàrl',
     company_type: 'company',
     active: true,
@@ -39,7 +39,7 @@ let partnerSupplier = {
     supplier: true
 };
 
-let partnerMarket = {
+export let partnerMarket = {
     name: 'Marché',
     company_type: 'company',
     active: true,
@@ -48,7 +48,7 @@ let partnerMarket = {
     supplier: false
 };
 
-let productWood: any = {
+export let productWood: any = {
     active: true,
     name: 'Bois',
     sale_ok: false,
@@ -59,7 +59,7 @@ let productWood: any = {
     supplier_taxes_id: []
 };
 
-let productPaper: any = {
+export let productPaper: any = {
     active: true,
     name: 'Paper',
     sale_ok: true,
@@ -76,8 +76,8 @@ let productPaper: any = {
 export class OdooAdapter {
 
     public config:any = {
-        autoCommitPo: true,
-        autoCommitSo: true
+        autoCommitPo: false,
+        autoCommitSo: false
     };
 
     public cache: any = {};
@@ -85,7 +85,7 @@ export class OdooAdapter {
     public cacheDailySoId: number[] = [];
     public cacheDailyCustomerInvoiceId: number[] = [];
 
-    private odoo: Odoo;
+    public odoo: Odoo;
     private gameState: GameState;
     private currentDay: string;
     private currentDayTime: string;
@@ -616,11 +616,13 @@ export class OdooAdapter {
 
     async makePayment(payment:any): Promise<any> {
         return this.execute((resolve, reject) => {
+            console.log('makePayment', payment);
             this.odoo.create('account.payment', payment, (err: any, paymentId: any) =>  {
                 if (err) {
                     reject(err);
                     return;
                 }
+                console.log('post payment', paymentId);
                 this.odoo.rpc_call('/web/dataset/call_button', {
                     model: 'account.payment',
                     method: 'post',
@@ -688,14 +690,17 @@ export class OdooAdapter {
 
         return this.execute((resolve, reject) => {
             this.odoo.create('sale.order', so, (err, soId) => {
-                this.createDefaultResponseHandler(resolve, reject)(err, soId);
                 if (this.config.autoCommitSo) {
                     // creates picking entry
                      this.odoo.rpc_call('/web/dataset/call_button', {
                         model: 'sale.order',
                         method: 'action_confirm',
                         args: [[soId]]
-                    }, (err, res) => {});
+                    }, (err, res) => {
+                        this.createDefaultResponseHandler(resolve, reject)(err, soId);
+                    });
+                } else {
+                    this.createDefaultResponseHandler(resolve, reject)(err, soId);
                 }
             });
         });
@@ -707,14 +712,16 @@ export class OdooAdapter {
                 let so: any = await this.execute((resolve, reject) => {
                     this.odoo.get('sale.order', {ids: [soId]}, this.createDefaultResponseHandler(resolve, reject));
                 });
-                if (so && so.state === 'sale') {
+                if (so[0] && so[0].state === 'sale') {
                     // TODO: check price & qty
                     console.log('TODO: extract qty from so: ', so);
+                    // read orderline so[0].order_line: [ 5 ]
                     let qty = 1;
                     this.game.input(this.company.name, qty);
                     resolve(soId);
                 } else {
                     // TODO: auto cancel so?
+                    console.log('TODO: auto cancel so?');
                     resolve(null);
                 }
             } catch(e) {
@@ -727,11 +734,11 @@ export class OdooAdapter {
         let pickingId = await this.execute((resolve, reject) => {
             this.odoo.search('stock.picking', {
             domain: [
-                ['sales_id', '=', soId]
+                ['sale_id', '=', soId]
             ]
             }, this.createDefaultResponseHandler(resolve, reject));
         });
-        return this.validatePicking(pickingId);
+        return this.validatePicking(pickingId[0]);
     }
 
     async createCustomerInvoice(soId: number): Promise<any> {
@@ -754,6 +761,8 @@ export class OdooAdapter {
                 }, (err: any, res: any) => {
                     if (err) { return reject(err); }
                     let invId = res.res_id;
+                    /* odoo 9 workflow */
+                    /*
                     this.odoo.rpc_call('/web/dataset/exec_workflow', {
                         model: 'account.invoice',
                         id: invId,
@@ -762,6 +771,15 @@ export class OdooAdapter {
                         if (err) { return reject(err); }
                         this.createDefaultResponseHandler(resolve, reject)(err, invId);
                     });
+                    */
+                    // odoo 10 action
+                     this.odoo.rpc_call('/web/dataset/call_button', {
+                        model: 'account.invoice',
+                        method: 'action_invoice_open',
+                        args: [[ m ]]
+                        }, (err: any, res: any) => {
+                            this.createDefaultResponseHandler(resolve, reject)(err, invId);
+                        });
                 });
 
             });
@@ -769,15 +787,21 @@ export class OdooAdapter {
     }
 
     async payCustomerInvoice(invoiceId: number, amount: number): Promise<any> {
-        return this.makePayment({
-            payment_type: 'inbound',
-            partner_type: 'customer',
-            partner_id: this.cache[partnerMarket.name],
-            journal_id: this.cache['INV'],
-            payment_method_id: 1, // TODO: lookup cash?
-            amount: amount, // TODO: from invoice or sim??
-            payment_date: this.currentDay,
-            communication: 'INV/2016/' + zeroPadding(invoiceId),
+        return this.execute((resolve, reject) => {
+            this.odoo.get('account.invoice', {ids: [invoiceId], fields: ['number']}, (err, res) => {
+                if (err) { return reject(err); }
+                this.makePayment({
+                    payment_type: 'inbound',
+                    partner_type: 'customer',
+                    partner_id: this.cache[partnerMarket.name],
+                    journal_id: this.cache['INV'],
+                    payment_method_id: 1, // TODO: lookup cash?
+                    amount: amount, // TODO: from invoice or sim??
+                    payment_date: this.currentDay,
+                    communication: res[0].number,
+                    invoice_ids: [[4, invoiceId, null]]
+                }).then(resolve, reject);
+            });
         });
     }
 

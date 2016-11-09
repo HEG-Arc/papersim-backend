@@ -802,7 +802,7 @@ export class OdooAdapter {
                      this.odoo.rpc_call('/web/dataset/call_button', {
                         model: 'account.invoice',
                         method: 'action_invoice_open',
-                        args: [[ soId ]]
+                        args: [[ invId ]]
                         }, (err: any, res: any) => {
                             this.createDefaultResponseHandler(resolve, reject)(err, invId);
                         });

@@ -18,8 +18,8 @@ odooAdapter.updateGameStateAndDay(game);
 async function test(){
     await setup();
     await testSales();
-    await testSupply();
-    await testMrp();
+    //await testSupply();
+    //await testMrp();
 }
 
 async function setup(){
@@ -77,8 +77,18 @@ test();
 
 /*
 setup().then(()=>{
+
+    odooAdapter.odoo.search('account.invoice', {
+        domain: [
+            ['origin', '=', 'SO020']
+        ]
+    }, (err, res) => {
+        console.log(err, res);
+    });
+
     odooAdapter.odoo.get('purchase.order.line', {ids: [5]}, (err, res) => {
         console.log(err, res);
     });
+
 });
 */

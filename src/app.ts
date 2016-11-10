@@ -15,6 +15,7 @@ let games:{[key:string]:Game} = {};
 
 const saveFolder:string = 'savegames';
 
+app.use(express.static('public'));
 app.get('/', (req: express.Request, res: express.Response) => {
     res.end('papersim server');
 });

@@ -1,5 +1,5 @@
 import { Game, Company, GameState } from './sim';
-import { OdooAdapter, productPaper, productWood, partnerMarket, partnerSupplier} from './odoo_adapter';
+import { OdooAdapter, productCard, productPaper, partnerMarket, partnerSupplier} from './odoo_adapter';
 
 let game = new Game();
 game.start('test');
@@ -17,14 +17,14 @@ odooAdapter.updateGameStateAndDay(game);
 
 async function test(){
     await setup();
-    await testSales();
-    await testSupply();
-    await testMrp();
+    //await testSales();
+    //await testSupply();
+    //await testMrp();
 }
 
 async function setup(){
     // TODO: checkOrUpdate
-    //await odooAdapter.createConfig();
+    await odooAdapter.createConfig();
     await odooAdapter.checkConfig();
 }
 
@@ -32,9 +32,9 @@ async function setup(){
 async function testSales() {
    console.log('decidingMarketPriceState');
         // setup market price and SO
-    await odooAdapter.updateSalesProductPrice(odooAdapter.cache[productPaper.name], 10);
+    await odooAdapter.updateSalesProductPrice(odooAdapter.cache[productCard.name], 10);
     console.log('createSalesOrder');
-    var soId = await odooAdapter.createSalesOrder(odooAdapter.cache[partnerMarket.name], odooAdapter.cache[productPaper.name], 10);
+    var soId = await odooAdapter.createSalesOrder(odooAdapter.cache[partnerMarket.name], odooAdapter.cache[productCard.name], 10);
     console.log('soId', soId);
     console.log('acceptingSalesState');
     var soId = await odooAdapter.readAndCheckSo(soId);
@@ -50,9 +50,9 @@ async function testSales() {
 
 async function testSupply(){
     console.log('decidingSupplierPriceState');
-    await odooAdapter.updateSupplierProductPrice(odooAdapter.cache[partnerSupplier.name], odooAdapter.cache[productWood.name], 10);
+    await odooAdapter.updateSupplierProductPrice(odooAdapter.cache[partnerSupplier.name], odooAdapter.cache[productPaper.name], 10);
     console.log('createPurchaseOrder');
-    var poId = await odooAdapter.createPurchaseOrder(odooAdapter.cache[partnerSupplier.name], odooAdapter.cache[productWood.name], 10);
+    var poId = await odooAdapter.createPurchaseOrder(odooAdapter.cache[partnerSupplier.name], odooAdapter.cache[productPaper.name], 10);
 
     console.log('acceptingPurchasesState');
     poId = await odooAdapter.readAndCheckPo(poId);

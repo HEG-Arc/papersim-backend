@@ -91,15 +91,18 @@ export class OdooAdapter {
     private currentDayTime: string;
 
     constructor(private game: Game, private company: Company) {
-        this.odoo = new Odoo({
-            host: `${company.odoo.database}.odoo.com`,
-            port: 443,
-            database: company.odoo.database,
-            username: company.odoo.username,
-            password: company.odoo.password,
-            protocol: 'https'
-        });
-        this.checkConfig();
+        try {
+            this.odoo = new Odoo({
+                host: `${company.odoo.database}.odoo.com`,
+                port: 443,
+                database: company.odoo.database,
+                username: company.odoo.username,
+                password: company.odoo.password,
+                protocol: 'https'
+            });
+        } catch(e) {
+            console.log('error init odoo connection');
+        }
         game.pubsub.on('state', this.stateListener.bind(this));
         // TODO: listen for checkrequests
         // TODO: emit errors, logs
@@ -189,7 +192,7 @@ export class OdooAdapter {
             } else {
                 this.odoo.connect((err: any) => {
                     if (err) {
-                        console.log(err);
+                        console.log('execute connect err', err);
                         return reject(err);
                     }
                     callback(resolve, reject);
@@ -201,7 +204,7 @@ export class OdooAdapter {
     createDefaultResponseHandler(resolve: Function, reject: Function): (err: any, result: any) => void {
         return (err, result) => {
             if (err) {
-                console.log(err);
+                console.log('ERR', err);
                 return reject(err);
             }
             console.log('INFO', result);

@@ -100,6 +100,9 @@ export class OdooAdapter {
                 password: company.odoo.password,
                 protocol: 'https'
             });
+            // TODO: something if fail?
+            this.checkConfig();
+            this.preload();
         } catch(e) {
             console.log('error init odoo connection');
         }

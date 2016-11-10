@@ -5,6 +5,7 @@ import * as sio from 'socket.io';
 import * as  fs from 'fs';
 import * as path from 'path';
 import { Game, GameState, TestGame } from './sim';
+import { OdooAdapter } from './odoo_adapter';
 
 let app = express();
 let urlencodeParser = bodyParser.urlencoded({ extended: false });
@@ -16,6 +17,20 @@ const saveFolder:string = 'savegames';
 
 app.get('/', (req: express.Request, res: express.Response) => {
     res.end('papersim server');
+});
+
+app.get('/check/:name', (req: express.Request, res: express.Response) => {
+  let game = new Game();
+  game.start('checker');
+  let odooAdapter:OdooAdapter = game.addCompany(req.params.name, {
+      database: 'edu-paper2',
+      username: 'edu-paper@mailinator.com',
+      password: '12345678'
+  });
+  odooAdapter.updateGameStateAndDay(game);
+  odooAdapter.checkConfig().then((result) => {
+    res.json(result);
+  });
 });
 
 function createOrLoadGame(filename?: string): Game {

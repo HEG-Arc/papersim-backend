@@ -262,30 +262,72 @@ export class OdooAdapter {
         }
     }
 
+    async check(name: string, func: Function): Promise<any> {
+        let test: any = {
+                name: name,
+                valid: false
+            };
+        try {
+            test.result = await func();
+            test.valid = true;
+        }
+        finally{
+            return test;
+        }
+
+    }
+
     async checkConfig() {
         this.gameState = this.game.getState();
+
+        // parallelized
+        let checked = await Promise.all([
+            this.check(partnerSupplier.name, async () => {
+                return this.checkPartner(partnerSupplier);
+            }),
+            this.check(partnerMarket.name, async () => {
+                return this.checkPartner(partnerMarket);
+            }),
+            this.check(productWood.name, async () => {
+                let woodId = await this.checkProduct(productWood);
+                this.updateProductImage(woodId, 'assets/wood.jpg');
+                return woodId
+            }),
+            this.check(productPaper.name, async () => {
+                let paperId = await this.checkProduct(productPaper);
+                this.updateProductImage(paperId, 'assets/paper.jpg');
+                return paperId;
+            }),
+        ]);
+
+        if(checked[2].valid && checked[3].valid) {
+            checked.push(
+                await this.check('BOM', async () => {
+                    return this.checkBOM(this.makePaperBom(checked[3].result, checked[2].result));
+            }));
+        } else {
+            checked.push({'name': 'BOM', valid: false});
+        }
+
+        // TODO: emit error for frontend?
+        // TODO check stock level
+        // TODO check account cash
+
+        return checked;
+    }
+
+    async preload() {
         try {
-            // TODO paraleillize queries??
-            await this.checkPartner(partnerSupplier);
-            await this.checkPartner(partnerMarket);
             await this.getAccountIdByCode('1001');
             await this.getAccountIdByCode('2800');
             await this.getAccountIdByCode('4200');
             await this.getLocationIdByName('Stock');
             await this.getJournalIdByCode('BILL');
             await this.getJournalIdByCode('INV');
-
-            let woodId = await this.checkProduct(productWood);
-            this.updateProductImage(woodId, 'assets/wood.jpg');
-            let paperId = await this.checkProduct(productPaper);
-            this.updateProductImage(paperId, 'assets/paper.jpg');
-            await this.checkBOM(this.makePaperBom(paperId, woodId));
         } catch (e) {
             console.log('ERR', e);
-            //TODO: emit error
+            //TODO: emit erro
         }
-        // TODO check stock level
-        // TODO check account cash
     }
 
 

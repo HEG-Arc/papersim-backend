@@ -4,7 +4,7 @@ import { OdooAdapter, productCard, productPaper, partnerMarket, partnerSupplier}
 let game = new Game();
 game.start('test');
 let odooAdapter:OdooAdapter = game.addCompany('A1', {
-    database: 'edu-paper2',
+    database: 'edu-paper3',
     username: 'edu-paper@mailinator.com',
     password: '12345678'
 });
@@ -24,7 +24,8 @@ async function test(){
 
 async function setup(){
     // TODO: checkOrUpdate
-    await odooAdapter.createConfig();
+    //await odooAdapter.createConfig();
+    await odooAdapter.updateNames();
     await odooAdapter.checkConfig();
 }
 

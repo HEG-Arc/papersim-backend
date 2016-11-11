@@ -304,6 +304,28 @@ export class OdooAdapter {
 
     }
 
+    async updateNames() {
+        let name =  'Manufacture de papier SA';
+        await this.execute((resolve: Function, reject: Function) => {
+            this.odoo.update('res.company', 1, {
+                name: name,
+                city: false,
+                country_id: false,
+                street: false,
+                zip: false,
+                email: false,
+                logo: fs.readFileSync('assets/scissors.png', 'base64'),
+                rml_header1: false,
+                website: false,
+            }, this.createDefaultResponseHandler(resolve, reject));
+        });
+        await this.execute((resolve: Function, reject: Function) => {
+            this.odoo.update('stock.warehouse', 1, {
+               name: name
+            }, this.createDefaultResponseHandler(resolve, reject));
+        });
+    }
+
     async createConfig() {
         try {
             await this.createPartner(partnerSupplier);

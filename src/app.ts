@@ -1,24 +1,48 @@
 import * as http from 'http';
+import * as express from 'express';
+import * as bodyParser from 'body-parser';
 import * as sio from 'socket.io';
 import * as  fs from 'fs';
 import * as path from 'path';
 import { Game, GameState, TestGame } from './sim';
+import { OdooAdapter } from './odoo_adapter';
 
-let app = http.createServer();
-let io = sio().listen(app);
+let app = express();
+let urlencodeParser = bodyParser.urlencoded({ extended: false });
+let server = http.createServer(app);
+let io = sio().listen(server);
 let games:{[key:string]:Game} = {};
 
 const saveFolder:string = 'savegames';
 
+app.use(express.static('public'));
+app.get('/', (req: express.Request, res: express.Response) => {
+    res.end('papersim server');
+});
+
+app.get('/check/:name', (req: express.Request, res: express.Response) => {
+  let game = new Game();
+  game.start('checker');
+  let odooAdapter:OdooAdapter = game.addCompany(req.params.name, {
+      database: 'edu-paper2',
+      username: 'edu-paper@mailinator.com',
+      password: '12345678'
+  });
+  odooAdapter.updateGameStateAndDay(game);
+  odooAdapter.checkConfig().then((result) => {
+    res.json(result);
+  });
+});
 
 function createOrLoadGame(filename?: string): Game {
+  console.log('loadGame', filename);
   let game:Game = new Game();
   if (filename) {
     try {
       let json = fs.readFileSync(path.join(saveFolder, filename), 'utf-8');
       game.loadFromJson(json);
     } catch(e) {
-      console.log(e);
+      console.log('error loading game', filename, e);
     }
   }
   // forward events to socket.io and setup autosave
@@ -53,6 +77,7 @@ function gameList ():any[] {
 require('socketio-auth')(io, {
   authenticate: function (socket: SocketIO.Socket, data: any, callback: Function) {
     //get credentials sent by the client
+    console.log('socket auth');
     var username = data.username;
     var password = data.password;
 
@@ -67,8 +92,8 @@ require('socketio-auth')(io, {
       let game = games[id];
       if (game) {
         // TODO FIX should be relative to current game not allow any game id
-        socket.on('addCompany', (id: string, companyName: string) => {
-          games[id].addCompany(companyName);
+        socket.on('addCompany', (id: string, companyName: string, odoo?: any) => {
+          games[id].addCompany(companyName, odoo);
         });
 
         socket.on('nextState', (id: string) => {
@@ -77,7 +102,7 @@ require('socketio-auth')(io, {
 
         socket.on('input', (id: string, args: any[], callback: Function) => {
           let game = games[id];
-          console.log(game);
+          console.log('app.input', game);
           let r = false;
           if (game.input) {
             r = game.input.apply(game, args);
@@ -113,10 +138,10 @@ require('socketio-auth')(io, {
       callback(game.getId());
       io.emit('gameList', gameList());
     });
-
+    console.log('post auth');
     socket.emit('gameList', gameList());
 
   }
 });
-
+console.log('listenning for connections');
 app.listen(80);

@@ -30,8 +30,26 @@ function zeroPadding(number: number): string {
 
 // Game configs
 
+export let packUoM = {
+    name: 'Pack',
+    category_id: 1, // unit
+    uom_type: 'bigger',
+    factor_inv: 10,
+    active: true,
+    rounding: 1
+};
+
 export let partnerSupplier = {
-    name: 'Scierie Sàrl',
+    name: 'Moulin SA',
+    company_type: 'company',
+    active: true,
+    is_company: true,
+    customer: false,
+    supplier: true
+};
+
+export let partnerSupplier2 = {
+    name: 'China Star',
     company_type: 'company',
     active: true,
     is_company: true,
@@ -40,7 +58,7 @@ export let partnerSupplier = {
 };
 
 export let partnerMarket = {
-    name: 'Marché',
+    name: 'Marché Sàrl',
     company_type: 'company',
     active: true,
     is_company: true,
@@ -48,9 +66,9 @@ export let partnerMarket = {
     supplier: false
 };
 
-export let productWood: any = {
+export let productPaper: any = {
     active: true,
-    name: 'Bois',
+    name: 'Papier',
     sale_ok: false,
     purchase_ok: true,
     type: 'product',
@@ -59,9 +77,21 @@ export let productWood: any = {
     supplier_taxes_id: []
 };
 
-export let productPaper: any = {
+export let productStar: any = {
     active: true,
-    name: 'Paper',
+    name: 'Gomettes',
+    sale_ok: false,
+    purchase_ok: true,
+    type: 'product',
+    //FIX: change in Odoo10? purchase_method: 'receive',
+    taxes_id: [],  // disable tax
+    supplier_taxes_id: []
+    //TODO: uom pack of 10
+};
+
+export let productCard: any = {
+    active: true,
+    name: 'Carte',
     sale_ok: true,
     purchase_ok: false,
     type: 'product',
@@ -91,15 +121,18 @@ export class OdooAdapter {
     private currentDayTime: string;
 
     constructor(private game: Game, private company: Company) {
-        this.odoo = new Odoo({
-            host: `${company.odoo.database}.odoo.com`,
-            port: 443,
-            database: company.odoo.database,
-            username: company.odoo.username,
-            password: company.odoo.password,
-            protocol: 'https'
-        });
-        this.checkConfig();
+        try {
+            this.odoo = new Odoo({
+                host: `${company.odoo.database}.odoo.com`,
+                port: 443,
+                database: company.odoo.database,
+                username: company.odoo.username,
+                password: company.odoo.password,
+                protocol: 'https'
+            });
+        } catch(e) {
+            console.log('error init odoo connection');
+        }
         game.pubsub.on('state', this.stateListener.bind(this));
         // TODO: listen for checkrequests
         // TODO: emit errors, logs
@@ -113,14 +146,20 @@ export class OdooAdapter {
     }
 
     async stateListener(game: Game, params: { from: string, to: string, payload: any }) {
+        // TODO: when to check have a state for preload/checked?
+        /*
+        this.checkConfig();
+        this.preload();
+        */
+
         this.updateGameStateAndDay(game);
         switch (params.to) {
             // TODO error handling
             case 'decidingMarketPriceState':
                 // setup market price and SO
-                await this.updateSalesProductPrice(this.cache[productPaper.name], params.payload.price);
+                await this.updateSalesProductPrice(this.cache[productCard.name], params.payload.price);
                 this.cacheDailySoId[this.gameState.currentDay] = await this.createSalesOrder(this.cache[partnerMarket.name],
-                                                                                             this.cache[productPaper.name],
+                                                                                             this.cache[productCard.name],
                                                                                              params.payload.price);
                 break;
             case 'acceptingSalesState':
@@ -148,10 +187,10 @@ export class OdooAdapter {
             case 'decidingSupplierPriceState':
                 // setup product price and PO
                 await this.updateSupplierProductPrice(this.cache[partnerSupplier.name],
-                                                      this.cache[productWood.name],
+                                                      this.cache[productPaper.name],
                                                       params.payload.price);
                 this.cacheDailyPoId[this.gameState.currentDay] = await this.createPurchaseOrder(this.cache[partnerSupplier.name],
-                                                                                                this.cache[productWood.name],
+                                                                                                this.cache[productPaper.name],
                                                                                                 params.payload.price);
                 break;
             case 'acceptingPurchasesState':
@@ -189,7 +228,7 @@ export class OdooAdapter {
             } else {
                 this.odoo.connect((err: any) => {
                     if (err) {
-                        console.log(err);
+                        console.log('execute connect err', err);
                         return reject(err);
                     }
                     callback(resolve, reject);
@@ -201,7 +240,7 @@ export class OdooAdapter {
     createDefaultResponseHandler(resolve: Function, reject: Function): (err: any, result: any) => void {
         return (err, result) => {
             if (err) {
-                console.log(err);
+                console.log('ERR', err);
                 return reject(err);
             }
             console.log('INFO', result);
@@ -244,47 +283,168 @@ export class OdooAdapter {
 
     }
 
+    makeCardBom(cardId: number, paperId: number, startId: number) {
+        return {
+            product_tmpl_id: cardId,
+            product_qty: this.gameState.productionRawToFinished,
+            //FIX: change in Odoo10? product_uom: 1,
+            bom_line_ids: [[0, false, {
+                product_qty: 1,
+                product_uom: 1,
+                sequence: 1,
+                product_id: paperId,
+            }],
+            [0, false, {
+                product_qty: 6,
+                product_uom: 1,
+                sequence: 1,
+                product_id: startId,
+            }]]
+        };
+
+    }
+
+    async updateNames() {
+        let name =  'Manufacture de papier SA';
+        await this.execute((resolve: Function, reject: Function) => {
+            this.odoo.update('res.company', 1, {
+                name: name,
+                city: false,
+                country_id: false,
+                street: false,
+                zip: false,
+                email: false,
+                logo: fs.readFileSync('assets/scissors.png', 'base64'),
+                rml_header1: false,
+                website: false,
+            }, this.createDefaultResponseHandler(resolve, reject));
+        });
+        await this.execute((resolve: Function, reject: Function) => {
+            this.odoo.update('stock.warehouse', 1, {
+               name: name
+            }, this.createDefaultResponseHandler(resolve, reject));
+        });
+    }
+
     async createConfig() {
         try {
             await this.createPartner(partnerSupplier);
+            await this.createPartner(partnerSupplier2);
             await this.createPartner(partnerMarket);
-            let woodId = await this.createProduct(productWood);
+
+            let packId = await this.createUoM(packUoM);
+            productStar.uom_po_id = packId;
             let paperId = await this.createProduct(productPaper);
-            let bom = this.makePaperBom(paperId, woodId);
+            let starId = await this.createProduct(productStar);
+            let cardId = await this.createProduct(productCard);
+            let bom = this.makeCardBom(cardId, paperId, starId);
             await this.createBOM(bom);
             await this.setInitialProductQuantity(paperId, this.gameState.initialStock);
+            await this.setInitialProductQuantity(starId, this.gameState.initialStock);
             await this.setInitialFund(this.gameState.initialCash);
         } catch (e) {
             console.log('ERR', e);
         }
     }
 
+    async check(name: string, func: Function): Promise<any> {
+        let test: any = {
+                name: name,
+                valid: false
+            };
+        try {
+            test.result = await func();
+            test.valid = true;
+        }
+        finally{
+            return test;
+        }
+
+    }
+
     async checkConfig() {
         this.gameState = this.game.getState();
+
+        let checkUoM = await this.check(packUoM.name, async () => {
+            return this.checkUoM(packUoM);
+        });
+
+        productStar.uom_po_id = checkUoM.result;
+
+
+        // parallelized
+        let checked = await Promise.all([
+            this.check(partnerSupplier.name, async () => {
+                return this.checkPartner(partnerSupplier);
+            }),
+            this.check(partnerSupplier2.name, async () => {
+                return this.checkPartner(partnerSupplier2);
+            }),
+            this.check(partnerMarket.name, async () => {
+                return this.checkPartner(partnerMarket);
+            }),
+            this.check(productPaper.name, async () => {
+                let woodId = await this.checkProduct(productPaper);
+                this.updateProductImage(woodId, 'assets/paper.jpg');
+                return woodId
+            }),
+            this.check(productStar.name, async () => {
+                let starId = await this.checkProduct(productStar);
+                this.updateProductImage(starId, 'assets/star.jpg');
+                return starId;
+            }),
+            this.check(productCard.name, async () => {
+                let paperId = await this.checkProduct(productCard);
+                this.updateProductImage(paperId, 'assets/card.jpg');
+                return paperId;
+            })
+        ]);
+
+
+        if(checked[2].valid && checked[3].valid) {
+            checked.push(
+                await this.check('BOM', async () => {
+                    return this.checkBOM(this.makeCardBom(checked[5].result, checked[3].result, checked[4].result));
+            }));
+        } else {
+            checked.push({'name': 'BOM', valid: false});
+        }
+        checked.unshift(checkUoM);
+
+        // TODO: emit error for frontend?
+        // TODO check stock level
+        // TODO check account cash
+
+        return checked;
+    }
+
+    async preload() {
         try {
-            // TODO paraleillize queries??
-            await this.checkPartner(partnerSupplier);
-            await this.checkPartner(partnerMarket);
             await this.getAccountIdByCode('1001');
             await this.getAccountIdByCode('2800');
             await this.getAccountIdByCode('4200');
             await this.getLocationIdByName('Stock');
             await this.getJournalIdByCode('BILL');
             await this.getJournalIdByCode('INV');
-
-            let woodId = await this.checkProduct(productWood);
-            this.updateProductImage(woodId, 'assets/wood.jpg');
-            let paperId = await this.checkProduct(productPaper);
-            this.updateProductImage(paperId, 'assets/paper.jpg');
-            await this.checkBOM(this.makePaperBom(paperId, woodId));
         } catch (e) {
             console.log('ERR', e);
-            //TODO: emit error
+            //TODO: emit erro
         }
-        // TODO check stock level
-        // TODO check account cash
     }
 
+    async checkUoM(uom: any): Promise<any> {
+        return this.execute((resolve: Function, reject: Function) => {
+            this.odoo.search('product.uom', {
+                domain: objectToDomain(uom)
+            }, this.createCacheResponseHandler(uom, resolve, reject));
+        });
+    }
+
+    async createUoM(uom: any): Promise<any> {
+        return this.execute((resolve: Function, reject: Function) => {
+            this.odoo.create('product.uom', uom, this.createCacheResponseHandler(uom, resolve, reject));
+        });
+    }
 
 
     async checkPartner(partner: any): Promise<any> {
@@ -500,7 +660,7 @@ export class OdooAdapter {
                 product_uom: 1,
                 price_unit: price,
                 taxes_id: [],
-                name: productWood.name // TODO: as parameter // description field in PO
+                name: productPaper.name // TODO: as parameter // description field in PO
             }]],
             date_planned: datePlanned
         };
@@ -605,7 +765,7 @@ export class OdooAdapter {
                         invoice_line_tax_ids: [],
                         discount: 0,
                         quantity: qty, // from sim for now
-                        product_id: this.cache[productWood.name],
+                        product_id: this.cache[productPaper.name],
                         account_id: this.cache['4200'], // lookup
                         purchase_line_id: poId // test?
                     }]],
@@ -836,7 +996,7 @@ export class OdooAdapter {
 
         // create production
         let mo:any = {
-            product_id: this.cache[productPaper.name],
+            product_id: this.cache[productCard.name],
             product_qty: quantityProduced,
             product_uom_id: 1,
             bom_id: this.cache['BOM'],

@@ -90,9 +90,9 @@ export class Game {
 
     createCompanyOdooAdapter(c: Company):OdooAdapter {
         if (c.odoo && c.odoo.database && c.odoo.username && c.odoo.password) {
-            let odooAdapter = new OdooAdapter(this, c);
-            this.odooAdapters.push(odooAdapter);
-            return odooAdapter;
+                let odooAdapter = new OdooAdapter(this, c);
+                this.odooAdapters.push(odooAdapter);
+                return odooAdapter;
         }
         return undefined;
     }

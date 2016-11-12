@@ -4,6 +4,7 @@ import * as bodyParser from 'body-parser';
 import * as sio from 'socket.io';
 import * as  fs from 'fs';
 import * as path from 'path';
+import * as redis from 'redis';
 import { Game, GameState, TestGame } from './sim';
 import { OdooAdapter } from './odoo_adapter';
 
@@ -14,6 +15,8 @@ let io = sio().listen(server);
 let games:{[key:string]:Game} = {};
 
 const saveFolder:string = 'savegames';
+
+let redisClient = redis.createClient(6379, 'redis_mail');
 
 app.use(express.static('public'));
 app.get('/', (req: express.Request, res: express.Response) => {
@@ -31,6 +34,25 @@ app.get('/check/:name', (req: express.Request, res: express.Response) => {
   odooAdapter.updateGameStateAndDay(game);
   odooAdapter.checkConfig().then((result) => {
     res.json(result);
+  });
+});
+
+app.get('/mail/:name',  (req: express.Request, res: express.Response) => {
+  redisClient.scan(0, 'match', `${req.params.name}@odoosim.ch:*`, (err: any, replies:any) => {
+    // TODO page scan?
+    if (err) {
+      res.status(500).send(err);
+    } else if (replies[1].length === 0) {
+      res.json([]);
+    } else {
+      redisClient.mget(replies[1], (err: any, results: any) => {
+        if (err) {
+          res.status(500).send(err);
+        } else {
+          res.send(`[${results.join(',')}]`);
+        }
+      });
+    }
   });
 });
 

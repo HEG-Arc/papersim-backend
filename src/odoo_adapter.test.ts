@@ -78,8 +78,18 @@ test();
 
 /*
 setup().then(()=>{
+
+    odooAdapter.odoo.search('account.invoice', {
+        domain: [
+            ['origin', '=', 'SO020']
+        ]
+    }, (err, res) => {
+        console.log(err, res);
+    });
+
     odooAdapter.odoo.get('purchase.order.line', {ids: [5]}, (err, res) => {
         console.log(err, res);
     });
+
 });
 */

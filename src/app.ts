@@ -18,6 +18,20 @@ const saveFolder:string = 'savegames';
 
 let redisClient = redis.createClient(6379, 'redis_mail');
 
+let sub = redis.createClient(6379, 'redis_mail');
+sub.on('psubscribe', (pattern: any, count: any) => {
+  console.log("subscribed to ", pattern, count)
+});
+sub.on("pmessage", (pattern: any, event: any, value: any) => {
+    //config set notify-keyspace-events Es$
+    redisClient.get(value, (err: any, mail: any) => {
+      console.log("new mail", mail.to, mail.from, mail.subject, mail.text);
+      //TODO: process based on subject/content
+    });
+});
+
+sub.psubscribe('__key*__:*');
+
 app.use(express.static('public'));
 app.get('/', (req: express.Request, res: express.Response) => {
     res.end('papersim server');

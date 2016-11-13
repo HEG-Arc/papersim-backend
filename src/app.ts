@@ -25,10 +25,11 @@ sub.on('psubscribe', (pattern: any, count: any) => {
 sub.on("pmessage", (pattern: any, event: any, value: any) => {
     //config set notify-keyspace-events Es$
     console.log('pmessage', pattern, event, value)
-    redisClient.get(value, (err: any, mail: any) => {
+    redisClient.get(value, (err: any, text: any) => {
       if(err) {
         console.log('redis error', err);
       }
+      let mail: any = JSON.parse(text);
       console.log("new mail", mail.to, mail.from, mail.subject, mail.text);
       //TODO: process based on subject/content
     });

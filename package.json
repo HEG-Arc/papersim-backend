@@ -5,7 +5,7 @@
   "scripts": {
     "serve": "node dist/app.js",
     "build": "tsc -p .",
-    "docker": "docker build -t papersim-backend ."
+    "docker": "docker build -t papersim-backend --no-cache=true ."
   },
   "author": "",
   "license": "ISC",

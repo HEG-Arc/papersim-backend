@@ -53,12 +53,13 @@ redisMailSubClient.on("pmessage", (pattern: any, event: any, value: any) => {
         updateDBState(db, 'activated', 'email', mail.to, 'password', defaultPassword);
          prepareAdapterForDB(db).then((odooAdapter) => {
             /* todo promise */
-            odooAdapter.updateNames();
             odooAdapter.createUser('VPSales', defaultPassword).then(() => {
               odooAdapter.inspect().then((result) => {
                 updateDB(db, 'inspect', JSON.stringify(result));
               });
             });
+            // TODO error if no warehouse...
+            odooAdapter.updateNames();
           });
       });
     }

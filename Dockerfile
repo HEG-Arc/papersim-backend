@@ -1,6 +1,6 @@
 FROM node:6
 RUN mkdir -p /app
-RUN npm install -g supervisor
+RUN npm install -g supervisor phantomjs
 COPY assets /app/assets
 COPY public /app/public
 COPY dist /app/dist

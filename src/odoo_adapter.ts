@@ -98,7 +98,7 @@ export let productCard: any = {
     //FIX: change in Odoo10?  purchase_method: 'receive',
     taxes_id: [],
     supplier_taxes_id: [],
-    warranty: 0,
+    //warranty: 0,
     produce_delay: 0,
     sale_delay: 0
 };

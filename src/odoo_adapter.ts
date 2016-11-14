@@ -347,6 +347,83 @@ export class OdooAdapter {
         }
     }
 
+    async createUser(name: string, password: string):Promise<any> {
+        return this.execute(async (resolve: Function, reject: Function) => {
+            const email = `${name.toLowerCase()}.${this.company.odoo.database}@odoosim.ch`;
+            let userId = await this.execute((resolve: Function, reject: Function) => {
+                this.odoo.create('res.users', {
+                    active: true,
+                    name: name,
+                    email: email,
+                    login: email,
+                    company_id: 1,
+                    /* TODO get groups from admin?
+                    sel_groups_41_42_43: 43,
+                    sel_groups_19_20: 20,
+                    sel_groups_26_27: 27,
+                    sel_groups_30_31_32: 32,
+                    sel_groups_36_37: 37,
+                    sel_groups_3: 3,
+                    sel_groups_70_71: 71,
+                    sel_groups_58_59: 59,
+                    sel_groups_1_2: 2,
+                    in_group_29: true,
+                    in_group_52: true,
+                    in_group_17: true,
+                    in_group_18: true,
+                    in_group_13: true,
+                    in_group_49: true,
+                    in_group_46: true,
+                    in_group_6: true,
+                    in_group_7: true,
+                    */
+                    tz: 'Europe/Zurich',
+                    notify_email: 'always',
+                    signature: `<p>${name}</p>`
+                }, this.createDefaultResponseHandler(resolve, reject));
+            });
+            console.log('userid', userId);
+
+            this.odoo.create('change.password.wizard', {
+                user_ids: [[0, false, {
+                    user_login: email,
+			        user_id: userId,
+			        new_passwd: password
+                }]]
+            }, (err: any, res: any) => {
+                console.log('pw_change', res);
+                 this.odoo.rpc_call('/web/dataset/call_button', {
+                    model: 'change.password.wizard',
+                    method: 'change_password_button',
+                    args: [[res]]
+                }, this.createDefaultResponseHandler(resolve, reject));
+            });
+        });
+    }
+
+    async inspect(): Promise<any> {
+        return Promise.all([
+        this.execute((resolve: Function, reject: Function) => {
+            this.odoo.search_read('ir.module.module', {
+                limit: 100,
+                fields: ['shortdesc', 'name', 'author', 'installed_version', 'state', 'category_id'],
+                domain:  [
+                    ['application', '=', 1],
+                    ['state', 'in', ['installed', 'to upgrade', 'to remove']]]
+
+            }, this.createDefaultResponseHandler(resolve, reject));
+        }),
+        this.execute((resolve: Function, reject: Function) => {
+            this.odoo.search_read('res.users', {
+                limit: 100,
+                fields: ['name', 'login', 'login_date'],
+                domain:  [
+                    ['share', '=', false]]
+
+            }, this.createDefaultResponseHandler(resolve, reject));
+        })]);
+    }
+
     async check(name: string, func: Function): Promise<any> {
         let test: any = {
                 name: name,

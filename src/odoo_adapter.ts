@@ -79,7 +79,7 @@ export let productPaper: any = {
 
 export let productStar: any = {
     active: true,
-    name: 'Gomettes',
+    name: 'Gommettes',
     sale_ok: false,
     purchase_ok: true,
     type: 'product',

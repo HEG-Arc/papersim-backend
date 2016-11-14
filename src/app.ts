@@ -7,89 +7,243 @@ import * as path from 'path';
 import * as redis from 'redis';
 import { Game, GameState, TestGame } from './sim';
 import { OdooAdapter } from './odoo_adapter';
+import { createDB, extrateActivationUrlFromMail, activationUrl2DB, activateDB } from './odoo_sass';
 
 let app = express();
 let urlencodeParser = bodyParser.urlencoded({ extended: false });
+let jsonParser = bodyParser.json();
 let server = http.createServer(app);
-let io = sio().listen(server);
-let games:{[key:string]:Game} = {};
+let io = sio()
+io.attach(server);
+let games: { [key: string]: Game } = {};
 
-const saveFolder:string = 'savegames';
+const DB_KEY = 'odoosim_db';
 
-let redisClient = redis.createClient(6379, 'redis_mail');
+const saveFolder: string = 'savegames';
 
-let sub = redis.createClient(6379, 'redis_mail');
-sub.on('psubscribe', (pattern: any, count: any) => {
+const defaultPassword: string = '12345678';
+
+let redisMailClient = redis.createClient(6379, 'redis_mail');
+let redisMailSubClient = redis.createClient(6379, 'redis_mail');
+let redisAdminClient = redis.createClient(6379, 'redis_mail');
+redisAdminClient.select(1);
+
+redisAdminClient.on("error", function (err: any) {
+  console.log("RedisAdminClientError " + err);
+});
+/* Handle e-mail events */
+redisMailSubClient.on('psubscribe', (pattern: any, count: any) => {
   console.log("subscribed to ", pattern, count)
 });
-sub.on("pmessage", (pattern: any, event: any, value: any) => {
-    //config set notify-keyspace-events Es$
-    console.log('pmessage', pattern, event, value)
-    redisClient.get(value, (err: any, text: any) => {
-      if(err) {
-        console.log('redis error', err);
-      }
-      let mail: any = JSON.parse(text);
-      console.log("new mail", mail.to, mail.from, mail.subject, mail.text);
-      //TODO: process based on subject/content
-    });
-});
-
-sub.psubscribe('__key*__:*');
-
-app.use(express.static('public'));
-app.get('/', (req: express.Request, res: express.Response) => {
-    res.end('papersim server');
-});
-
-app.get('/check/:name', (req: express.Request, res: express.Response) => {
-  let game = new Game();
-  game.start('checker');
-  let odooAdapter:OdooAdapter = game.addCompany(req.params.name, {
-      database: 'edu-paper2',
-      username: 'edu-paper@mailinator.com',
-      password: '12345678'
-  });
-  odooAdapter.updateGameStateAndDay(game);
-  odooAdapter.checkConfig().then((result) => {
-    res.json(result);
-  });
-});
-
-app.get('/mail/:name',  (req: express.Request, res: express.Response) => {
-  redisClient.scan(0, 'match', `${req.params.name}@odoosim.ch:*`, (err: any, replies:any) => {
-    // TODO page scan?
+redisMailSubClient.on("pmessage", (pattern: any, event: any, value: any) => {
+  //config set notify-keyspace-events Es$
+  console.log('pmessage', pattern, event, value)
+  redisMailClient.get(value, (err: any, text: any) => {
     if (err) {
-      res.status(500).send(err);
-    } else if (replies[1].length === 0) {
-      res.json([]);
-    } else {
-      redisClient.mget(replies[1], (err: any, results: any) => {
-        if (err) {
-          res.status(500).send(err);
-        } else {
-          res.send(`[${results.join(',')}]`);
-        }
+      console.log('redis error', err);
+    }
+    let mail: any = JSON.parse(text);
+    console.log("new mail", mail.to, mail.from, mail.subject, mail.text);
+    if (mail.subject.indexOf('Activate') > -1 && mail.subject.indexOf('odoo.com') > -1) {
+      /* TODO error handling */
+      const url = extrateActivationUrlFromMail(mail.text);
+      const dbName = activationUrl2DB(url);
+      updateDBState(dbName, 'email');
+      activateDB(url, defaultPassword).then((db) => {
+        updateDBState(db, 'activated', 'email', mail.to, 'password', defaultPassword);
+         prepareAdapterForDB(db).then((odooAdapter) => {
+            /* todo promise */
+            odooAdapter.updateNames();
+            odooAdapter.createUser('VPSales', defaultPassword).then(() => {
+              odooAdapter.inspect().then((result) => {
+                updateDB(db, 'inspect', JSON.stringify(result));
+              });
+            });
+          });
       });
     }
   });
 });
 
+redisMailSubClient.psubscribe('__keyevent@0__:set');
+
+/* Web API */
+
+app.use(express.static('public'));
+
+function prepareAdapterForDB(name: string): Promise<OdooAdapter> {
+  return new Promise((resolve: (value: any) => void, reject: (value: any) => void) => {
+    let game = new Game();
+    game.start('checker');
+    redisAdminClient.hmget(name, 'email', 'password', (err: any, res: any) => {
+      if (err) {
+        reject(err);
+      } else {
+        let odooAdapter: OdooAdapter = game.addCompany(name, {
+          database: name,
+          username: res[0],
+          password: res[1]
+        });
+        odooAdapter.updateGameStateAndDay(game);
+        resolve(odooAdapter);
+      }
+    });
+  });
+}
+
+app.get('/check/:name', (req: express.Request, res: express.Response) => {
+  prepareAdapterForDB(req.params.name).then((odooAdapter) => {
+    odooAdapter.checkConfig().then((result) => {
+      updateDB(req.params.name, 'check', JSON.stringify(result))
+      res.json(result);
+    });
+  })
+});
+
+app.get('/inspect/:name', (req: express.Request, res: express.Response) => {
+  prepareAdapterForDB(req.params.name).then((odooAdapter) => {
+    odooAdapter.inspect().then((result) => {
+      updateDB(req.params.name, 'inspect', JSON.stringify(result))
+      res.json(result);
+    });
+  })
+});
+
+app.get('/update/:name', (req: express.Request, res: express.Response) => {
+  prepareAdapterForDB(req.params.name).then((odooAdapter) => {
+    /* todo promise */
+    odooAdapter.updateNames();
+    res.end();
+  })
+});
+
+app.get('/adduser/:dbname/:user', (req: express.Request, res: express.Response) => {
+  prepareAdapterForDB(req.params.dbname).then((odooAdapter) => {
+    odooAdapter.createUser(req.params.user, defaultPassword).then(()=>{
+      odooAdapter.inspect().then((result) => {
+        updateDB(req.params.dbname, 'inspect', JSON.stringify(result));
+      });
+    });
+  });
+  res.end();
+});
+
+/* helper to scan redis (could try streaming version) */
+function fullscan(client: redis.RedisClient, pattern: string, callback: (err: any, results: any) => void) {
+  let results: any[] = [];
+  function scan(cursor: number) {
+    client.scan(cursor, 'match', pattern, (err: any, replies: any) => {
+      if (err) {
+        callback(err, null);
+      } else {
+        cursor = replies[0];
+        results = results.concat(replies[1]);
+        if (cursor === 0) {
+          callback(null, results);
+        } else {
+          scan(cursor)
+        }
+      }
+    });
+  }
+  scan(0);
+}
+
+
+app.get('/mail/:name', (req: express.Request, res: express.Response) => {
+  // TODO protect private mails?
+  fullscan(redisMailClient, `${req.params.name}@odoosim.ch:*`, (err: any, results: any) => {
+    if (err) {
+      res.status(500).send(err);
+    } else if (results.length === 0) {
+      res.json([]);
+    } else {
+      redisMailClient.mget(results, (err: any, results: any) => {
+
+      });
+      res.send(`[${results.join(',')}]`);
+    }
+  });
+});
+
+// TODO: secure
+
+function updateNameOdoo(name: string) {
+  prepareAdapterForDB(name).then((odooAdapter) => {
+
+  });
+}
+
+function updateDB(name: string, ...args: any[]) {
+  const msg: any = {
+    name: name,
+    date: new Date().getTime()
+  };
+  for (let i = 0; i < args.length; i = i + 2) {
+    msg[args[i]] = args[i + 1];
+  }
+  console.log(msg);
+  redisAdminClient.hmset(name, 'name', name, 'date', new Date().getTime(), ...args);
+  io.to('admin').emit('db_state', msg);
+}
+
+function updateDBState(name: string, state: string, ...args: any[]) {
+  updateDB(name, 'state', state, ...args);
+}
+
+app.get('/admin/db', (req: express.Request, res: express.Response) => {
+  redisAdminClient.smembers(DB_KEY, (err: any, response: any) => {
+    redisAdminClient.multi(response.map((key: string) => {
+      return ['hgetall', key];
+    })).exec((err: any, response: any) => {
+      res.json(response);
+    });
+  });
+});
+
+app.post('/admin/create', jsonParser, (req: express.Request, res: express.Response) => {
+  // get from post
+  req.body.forEach((name: string) => {
+    if (name === DB_KEY) {
+      return;
+    }
+    // add to redis set
+    redisAdminClient.sadd(DB_KEY, name);
+    /* TODO check if exists? */
+    // add own key with status creating, date
+    const email = `admin.${name}@odoosim.ch`;
+    updateDBState(name, 'creating', 'email', email);
+    createDB(name, email).then((db) => {
+      // update redis
+      updateDBState(db, 'created');
+      if (db !== name) {
+        updateDBState(name, 'renamed', 'to', db);
+      }
+    });
+
+  });
+  res.end();
+});
+
+/* TODO delete */
+
+/*  Game stuff move? */
+
 function createOrLoadGame(filename?: string): Game {
   console.log('loadGame', filename);
-  let game:Game = new Game();
+  let game: Game = new Game();
   if (filename) {
     try {
       let json = fs.readFileSync(path.join(saveFolder, filename), 'utf-8');
       game.loadFromJson(json);
-    } catch(e) {
+    } catch (e) {
       console.log('error loading game', filename, e);
     }
   }
   // forward events to socket.io and setup autosave
-  game.pubsub.on('*', (game: Game, ...args:any[]) => {
+  game.pubsub.on('*', (game: Game, ...args: any[]) => {
     save(game);
-    io.to(`game-${game.getId()}`).emit((<any> game.pubsub).event, game.getState(), ...args);
+    io.to(`game-${game.getId()}`).emit((<any>game.pubsub).event, game.getState(), ...args);
   });
   games[game.getId()] = game;
   return game;
@@ -109,7 +263,7 @@ function save(game: Game) {
 
 // odooAdapter <-> web?
 
-function gameList ():any[] {
+function gameList(): any[] {
   return Object.keys(games).map((id) => {
     return games[id].getState();
   });
@@ -123,12 +277,16 @@ require('socketio-auth')(io, {
     var password = data.password;
 
     if (username) {
-        return callback(null, password === 'root');
+      return callback(null, password === 'root');
     } else {
-        return callback(new Error('User not found'));
+      return callback(new Error('User not found'));
     }
   },
-  postAuthenticate: function(socket: SocketIO.Socket, data: any){
+  postAuthenticate: function (socket: SocketIO.Socket, data: any) {
+
+    socket.join('admin');
+
+
     socket.on('joinGame', (id: string, callback: Function) => {
       let game = games[id];
       if (game) {
@@ -185,4 +343,4 @@ require('socketio-auth')(io, {
   }
 });
 console.log('listenning for connections');
-app.listen(80);
+server.listen(80);

@@ -161,9 +161,8 @@ app.get('/mail/:name', (req: express.Request, res: express.Response) => {
       res.json([]);
     } else {
       redisMailClient.mget(results, (err: any, results: any) => {
-
+        res.send(`[${results.join(',')}]`);
       });
-      res.send(`[${results.join(',')}]`);
     }
   });
 });

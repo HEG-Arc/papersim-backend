@@ -137,7 +137,8 @@ function fullscan(client: redis.RedisClient, pattern: string, callback: (err: an
       if (err) {
         callback(err, null);
       } else {
-        cursor = replies[0];
+        cursor = parseInt(replies[0]);
+        console.log(cursor);
         results = results.concat(replies[1]);
         if (cursor === 0) {
           callback(null, results);

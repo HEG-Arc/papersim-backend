@@ -3,7 +3,7 @@
 (function (exports) {
     'use strict';
 
-    const socket = io.connect('//localhost');
+    const socket = io.connect('//');
 
     function prepareItem(item) {
         item.date = new Date(parseInt(item.date));

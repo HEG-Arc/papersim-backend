@@ -1,21 +1,41 @@
 /* global Vue */
-
+Vue.use(VueRouter);
 (function (exports) {
 
     'use strict';
-    exports.app = new Vue({
-        el: '#app',
-        data: {
-            name: '',
-            result: [],
-            view: 'html',
-            mail: undefined
+
+    var mailApp = Vue.component('mail-app', {
+        template: '#mail-app',
+        data: function (){
+            return {
+                name: this.$route.params.name,
+                result: [],
+                mail: {}
+            };
+        },
+        watch: {
+            '$route' (to, from) {
+                this.name = to.params.name;
+                this.fetchMail();
+            }
+        },
+        created: function () {
+            if (this.name) {
+                this.fetchMail();
+            }
         },
         methods: {
-            check: function (event) {
+            check: function () {
+                if (this.$route.params.name !== this.name) {
+                    router.push({ name: 'mail-list', params: { name: this.name }});
+                } else {
+                    this.fetchMail();
+                }
+            },
+            fetchMail: function () {
                 var self = this;
                 self.mail = undefined;
-                fetch('/mail/' + this.name)
+                fetch('/api/mail/' + this.name + '/list')
                 .then(function(response) {
                     return response.json();
                 }).then(function(json) {
@@ -32,25 +52,63 @@
                     }]
                     console.log('parsing failed', ex);
                 });
-            },
-            display: function (item) {
-                if (item.html) {
-                    this.view = 'html';
-                } else {
-                    this.view = 'text';
-                }
-                this.mail = item;
-            }
-        },
-
-        filters: {
-            fromNow: function (date) {
-                return moment(date).fromNow();
-            },
-            date: function (date) {
-                return moment(date).format('MMMM Do YYYY, hh:mm:ss');
             }
         }
+    });
 
+    var mailList = Vue.component('mail-list', {
+        template: '#mail-list-template',
+        props: ['result'],
+    });
+
+    var mailDetail = Vue.component('mail-detail', {
+        template: '#mail-detail-template',
+        props: ['result'],
+        data : function () {
+            var mail = this.result[this.$route.params.index];
+            return {
+                mail: mail,
+                index: parseInt(this.$route.params.index),
+                view: mail && mail.html ? 'html' : 'text'
+            }
+        },
+        watch: {
+            '$route': function (to, from) {
+                this.mail = this.result[to.params.index];
+                this.index = parseInt(to.params.index),
+                this.view = this.mail.html ? 'html' : 'text'
+            },
+            'result': function () {
+                this.mail = this.result[this.$route.params.index];
+                this.index = parseInt(this.$route.params.index),
+                this.view = this.mail.html ? 'html' : 'text'
+            }
+        },
+    });
+
+    Vue.filter('fromNow', function (date) {
+        return moment(date).fromNow();
+    });
+
+    Vue.filter('date', function (date) {
+        return moment(date).format('MMMM Do YYYY, hh:mm:ss');
+    });
+
+    var router = new VueRouter({
+        mode: 'history',
+        routes: [
+            {path: '/', component: mailApp},
+            {path: '/:name', component: mailApp,
+             children: [
+                 {path:'', name:'mail-list', component: mailList},
+                 {path:':index', name:'mail-detail', component: mailDetail}
+
+            ]}
+        ]
+    });
+
+    exports.app = new Vue({
+        el: '#app',
+        router: router
     });
 })(window);

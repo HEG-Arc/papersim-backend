@@ -69,8 +69,11 @@ redisMailSubClient.on("pmessage", (pattern: any, event: any, value: any) => {
 redisMailSubClient.psubscribe('__keyevent@0__:set');
 
 /* Web API */
-
 app.use(express.static('public'));
+// mail html5 mode
+app.get('/mail/*', function(req, res) {
+  res.sendfile('public/mail/index.html');
+});
 
 function prepareAdapterForDB(name: string): Promise<OdooAdapter> {
   return new Promise((resolve: (value: any) => void, reject: (value: any) => void) => {
@@ -138,7 +141,6 @@ function fullscan(client: redis.RedisClient, pattern: string, callback: (err: an
         callback(err, null);
       } else {
         cursor = parseInt(replies[0]);
-        console.log(cursor);
         results = results.concat(replies[1]);
         if (cursor === 0) {
           callback(null, results);
@@ -152,7 +154,7 @@ function fullscan(client: redis.RedisClient, pattern: string, callback: (err: an
 }
 
 
-app.get('/mail/:name', (req: express.Request, res: express.Response) => {
+app.get('/api/mail/:name/list', (req: express.Request, res: express.Response) => {
   // TODO protect private mails?
   fullscan(redisMailClient, `${req.params.name}@odoosim.ch:*`, (err: any, results: any) => {
     if (err) {
@@ -163,6 +165,30 @@ app.get('/mail/:name', (req: express.Request, res: express.Response) => {
       redisMailClient.mget(results, (err: any, results: any) => {
         res.send(`[${results.join(',')}]`);
       });
+    }
+  });
+});
+
+app.get('/api/mail/:name/send', (req: express.Request, res: express.Response) => {
+  const mail = {
+    to: `${req.params.name}@odoosim.ch`,
+    from: 'random@example.com',
+    subject: 'Test email',
+    text: 'Hello World\nLine 2',
+    html: '<h1>Hello world</h1>',
+    raw: 'fake',
+    hash: new Date().getTime(),
+    recipient: `${req.params.name}@odoosim.ch`,
+    address: `${req.params.name}@odoosim.ch`,
+    mailFrom: 'random@example.com',
+    tls: false,
+    date: new Date()
+  };
+  redisMailClient.setex(`${req.params.name}@odoosim.ch:${mail.hash}`, 3600, JSON.stringify(mail), (err: any, results: any) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.end(results);
     }
   });
 });
@@ -183,7 +209,6 @@ function updateDB(name: string, ...args: any[]) {
   for (let i = 0; i < args.length; i = i + 2) {
     msg[args[i]] = args[i + 1];
   }
-  console.log(msg);
   redisAdminClient.hmset(name, 'name', name, 'date', new Date().getTime(), ...args);
   io.to('admin').emit('db_state', msg);
 }

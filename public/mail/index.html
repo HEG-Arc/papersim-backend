@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <base href="/mail/">
     <meta charset="UTF-8">
     <title>OdooSIM Check Mail</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
@@ -33,84 +34,100 @@
 
 <body>
     <div class="container" id="app">
-        <div class="row">
-            <div class="col-md-12">
-                <div class="jumbotron">
-                    <p>Check Odoo Mail</p>
-                    <form v-on:submit.prevent="check()">
-                        <div class="input-group">
-                            <input type="text" class="form-control" v-model="name" placeholder="name">
-                            <span class="input-group-addon">@odoosim.ch</span>
-                            <span class="input-group-btn">
-                            <button class="btn btn-primary" type="submit">Display</button>
-                        </span>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-md-12" v-if="!mail">
-                <div class="row mail-select-header">
-                    <div class="col-md-3">From</div>
-                    <div class="col-md-7">Subject</div>
-                    <div class="col-md-2">Time</div>
-                </div>
-                <div v-for="(item, index) in result" class="row mail-select" v-on:click="display(item)">
-                    <div class="col-md-3">{{ item.from }}</div>
-                    <div class="col-md-7">{{ item.subject }}</div>
-                    <div class="col-md-2">{{ item.date | fromNow }}</div>
-                </div>
-                <div v-if="result.length == 0">No emails</div>
-            </div>
-            <div class="col-md-12" v-if="mail">
-                <div class="row" style="margin-bottom: 20px">
-                    <div class="col-xs-4">
-                        <button v-on:click="display(result[result.indexOf(mail) - 1])" type="button" class="btn" v-bind:disabled="result.indexOf(mail) == 0">
-                            <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span> Previous</button>
-                    </div>
-                    <div class="col-xs-4">
-                        <div class="text-center">
-                            <button v-on:click="mail = undefined" type="button" class="btn"> <span class="glyphicon glyphicon-list" aria-hidden="true"></span> List ({{result.indexOf(mail)+1}}/{{result.length}})</button>
-                        </div>
-                    </div>
-                    <div class="col-xs-4">
-                        <div class="pull-right">
-                            <button v-on:click="display(result[result.indexOf(mail) + 1])" type="button" class="btn" v-bind:disabled="result.indexOf(mail) == result.length-1">Next <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span></button>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-8">
-                        <div><strong>From:</strong> {{mail.from}}</div>
-                        <div><strong>Date:</strong> {{mail.date | date}}</div>
-                        <div><strong>Subject:</strong> {{mail.subject}}</div>
-                    </div>
-                    <div class="col-md-4">
-
-                        <select class="form-control" v-model="view">
-                            <option value="html">HTML</option>
-                            <option value="text">Text</option>
-                            <option value="src">Src</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div v-if="view == 'html'">
-                    <iframe v-bind:srcdoc="mail.html"></iframe>
-                </div>
-                <div v-if="view == 'text'">
-                    <pre>{{mail.text}}</pre>
-                </div>
-                <div v-if="view == 'src'">
-                    <pre>{{mail.raw}}{{mail.body}}</pre>
-                </div>
-            </div>
-        </div>
+        <router-view></router-view>
     </div>
+
+
+    <script type="text/x-template" id="mail-app">
+        <div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="jumbotron">
+                        <p>Check Odoo Mail</p>
+                        <form v-on:submit.prevent="check()">
+                            <div class="input-group">
+                                <input type="text" class="form-control" v-model="name" placeholder="name">
+                                <span class="input-group-addon">@odoosim.ch</span>
+                                <span class="input-group-btn">
+                                <button class="btn btn-primary" type="submit">Display</button>
+                            </span>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <router-view v-bind:result="result"></router-view>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/x-template" id="mail-list-template">
+        <div class="col-md-12">
+            <div class="row mail-select-header">
+                <div class="col-md-3">From</div>
+                <div class="col-md-7">Subject</div>
+                <div class="col-md-2">Time</div>
+            </div>
+            <router-link tag="div" v-for="(item, index) in result" class="row mail-select" :to="{ name: 'mail-detail', params: { name: $route.params.name, index: index }}">
+                <div class="col-md-3">{{ item.from }}</div>
+                <div class="col-md-7">{{ item.subject }}</div>
+                <div class="col-md-2">{{ item.date | fromNow }}</div>
+            </router-link>
+            <div v-if="result.length == 0">No emails</div>
+        </div>
+    </script>
+
+    <script type="text/x-template" id="mail-detail-template">
+        <div v-if="mail">
+            <div class="row" style="margin-bottom: 20px">
+                <div class="col-xs-4">
+                     <router-link tag="button" :to="{ name: 'mail-detail', params: { name: $route.params.name, index: index - 1 }}" type="button" class="btn" v-bind:disabled="index == 0">
+                        <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span> Previous</router-link>
+                </div>
+                <div class="col-xs-4">
+                    <div class="text-center">
+                        <router-link tag="button" :to="{ name: 'mail-list', params: { name: $route.params.name }}" type="button" class="btn"> <span class="glyphicon glyphicon-list" aria-hidden="true"></span> List ({{index + 1}}/{{result.length}})</router-link>
+                    </div>
+                </div>
+                <div class="col-xs-4">
+                    <div class="pull-right">
+                         <router-link tag="button" :to="{ name: 'mail-detail', params: { name: $route.params.name, index: index + 1 }}" type="button" class="btn" v-bind:disabled="index == result.length-1">Next <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span></router-link>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-8">
+                    <div><strong>From:</strong> {{mail.from}}</div>
+                    <div><strong>Date:</strong> {{mail.date | date}}</div>
+                    <div><strong>Subject:</strong> {{mail.subject}}</div>
+                </div>
+                <div class="col-md-4">
+
+                    <select class="form-control" v-model="view">
+                        <option value="html">HTML</option>
+                        <option value="text">Text</option>
+                        <option value="src">Src</option>
+                    </select>
+                </div>
+            </div>
+
+            <div v-if="view == 'html'">
+                <iframe v-bind:srcdoc="mail.html"></iframe>
+            </div>
+            <div v-if="view == 'text'">
+                <pre>{{mail.text}}</pre>
+            </div>
+            <div v-if="view == 'src'">
+                <pre>{{mail.raw}}{{mail.body}}</pre>
+            </div>
+        </div>
+    </script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/1.0.0/fetch.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.16.0/moment.min.js"></script>
     <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/vue-router"></script>
     <script src="mail.js"></script>
 
 </body>

@@ -2,3 +2,5 @@ node_modules/
 *.map
 src/*.js
 dist/
+subscriptions.json
+vapidKeys.json

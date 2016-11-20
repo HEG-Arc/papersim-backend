@@ -9,13 +9,14 @@ import { Game, GameState, TestGame } from './sim';
 import { OdooAdapter } from './odoo_adapter';
 import { createDB, extrateActivationUrlFromMail, activationUrl2DB, activateDB } from './odoo_sass';
 
-let app = express();
-let urlencodeParser = bodyParser.urlencoded({ extended: false });
-let jsonParser = bodyParser.json();
-let server = http.createServer(app);
-let io = sio()
+const webpush = require('web-push');
+const app = express();
+const urlencodeParser = bodyParser.urlencoded({ extended: false });
+const jsonParser = bodyParser.json();
+const server = http.createServer(app);
+const io = sio()
 io.attach(server);
-let games: { [key: string]: Game } = {};
+const games: { [key: string]: Game } = {};
 
 const DB_KEY = 'odoosim_db';
 
@@ -23,9 +24,9 @@ const saveFolder: string = 'savegames';
 
 const defaultPassword: string = '12345678';
 
-let redisMailClient = redis.createClient(6379, 'redis_mail');
-let redisMailSubClient = redis.createClient(6379, 'redis_mail');
-let redisAdminClient = redis.createClient(6379, 'redis_mail');
+const redisMailClient = redis.createClient(6379, 'redis_mail');
+const redisMailSubClient = redis.createClient(6379, 'redis_mail');
+const redisAdminClient = redis.createClient(6379, 'redis_mail');
 redisAdminClient.select(1);
 
 redisAdminClient.on("error", function (err: any) {
@@ -43,7 +44,9 @@ redisMailSubClient.on("pmessage", (pattern: any, event: any, value: any) => {
       console.log('redis error', err);
     }
     let mail: any = JSON.parse(text);
-    console.log("new mail", mail.to, mail.from, mail.subject, mail.text);
+    console.log('[new mail]', mail.date, mail.to, mail.from, mail.subject);
+    notifyNewMail(mail);
+
     if (mail.subject.indexOf('Activate') > -1 && mail.subject.indexOf('odoo.com') > -1) {
       /* TODO error handling */
       const url = extrateActivationUrlFromMail(mail.text);
@@ -72,8 +75,71 @@ redisMailSubClient.psubscribe('__keyevent@0__:set');
 app.use(express.static('public'));
 // mail html5 mode
 app.get('/mail/*', function(req, res) {
-  res.sendfile('public/mail/index.html');
+  res.sendFile(path.join(__dirname, '../public/mail/index.html'));
 });
+
+/* Web Push*/
+const vapidKeysFilename = 'vapidKeys.json';
+let vapidKeys:any;
+try {
+  vapidKeys = JSON.parse(fs.readFileSync(vapidKeysFilename, 'utf-8'));
+} catch(e) {
+  vapidKeys = webpush.generateVAPIDKeys();
+  fs.writeFileSync(vapidKeysFilename, JSON.stringify(vapidKeys));
+}
+webpush.setVapidDetails(
+  'mailto:boris.fritscher@gmail.com',
+  vapidKeys.publicKey,
+  vapidKeys.privateKey
+);
+
+const subscriptionsFilename = 'subscriptions.json';
+let subscriptions:any;
+try {
+  subscriptions = JSON.parse(fs.readFileSync(subscriptionsFilename, 'utf-8'));
+} catch(e) {
+  subscriptions = {};
+}
+
+app.get('/api/push/key', (req: express.Request, res: express.Response) => {
+  res.send(vapidKeys.publicKey);
+});
+
+app.post('/api/push/subscribe', jsonParser, (req: express.Request, res: express.Response) => {
+  const mail = `${req.body.name}@odoosim.ch`;
+  const endpoint = req.body.endpoint;
+  const subscription = req.body.subscription;
+  if(!subscriptions.hasOwnProperty(mail)){
+    subscriptions[mail] = {};
+  }
+  if (subscription) {
+    subscriptions[mail][endpoint] = subscription;
+  } else {
+    delete subscriptions[mail][endpoint];
+  }
+  fs.writeFileSync(subscriptionsFilename, JSON.stringify(subscriptions));
+  res.end();
+});
+
+function notifyNewMail(mail:any){
+  if(subscriptions.hasOwnProperty(mail.to)){
+    Object.keys(subscriptions[mail.to]).forEach((endpoint) => {
+      webpush.sendNotification(
+      subscriptions[mail.to][endpoint],
+      JSON.stringify({
+        to: mail.to,
+        from: mail.from,
+        subject: mail.subject,
+        url: '/mail/' + mail.to.split('@')[0] +'/0'
+      }),
+      {
+        TTL: 3600
+      });
+    });
+  }
+}
+
+/* Odoo checks */
 
 function prepareAdapterForDB(name: string): Promise<OdooAdapter> {
   return new Promise((resolve: (value: any) => void, reject: (value: any) => void) => {

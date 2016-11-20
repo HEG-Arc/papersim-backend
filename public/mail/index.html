@@ -43,6 +43,14 @@
             <div class="row">
                 <div class="col-md-12">
                     <div class="jumbotron">
+                        <div class="pull-right" v-if="name">
+                            <button class="btn btn-primary" v-if="alerts[name]" v-on:click="unsubscribe(name)">
+                                <span class="glyphicon glyphicon-volume-up" ></span>
+                            </button>
+                            <button class="btn btn-default" v-if="!alerts[name]" v-on:click="subscribe(name)">
+                                <span class="glyphicon glyphicon-volume-off" ></span>
+                            </button>
+                        </div>
                         <p>Check Odoo Mail</p>
                         <form v-on:submit.prevent="check()">
                             <div class="input-group">

@@ -194,7 +194,7 @@ app.get('/api/check/:name/:type?', (req: express.Request, res: express.Response)
       res.json(result);
     });
   }).catch((err) => {
-    res.send(404);
+    res.sendStatus(404);
   });
 });
 
@@ -206,6 +206,19 @@ app.get('/api/inspect/:name', (req: express.Request, res: express.Response) => {
     });
   })
 });
+
+app.post('/api/adddata/:name', (req: express.Request, res: express.Response) => {
+  prepareAdapterForDB(req.params.name).then((odooAdapter) => {
+      return odooAdapter.addQuizData().then(()=>{
+        res.sendStatus(200);
+      }).catch(() => {
+        res.sendStatus(500);
+      });
+  }).catch(() => {
+    res.sendStatus(404);
+  });
+});
+
 
 app.get('/update/:name', (req: express.Request, res: express.Response) => {
   prepareAdapterForDB(req.params.name).then((odooAdapter) => {

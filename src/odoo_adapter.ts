@@ -621,6 +621,23 @@ export class OdooAdapter {
 
     /* end partial checks */
 
+    /* Add data for exercice*/
+
+    async addQuizData() {
+        await this.preload();
+        await this.checkConfig();
+        this.config.autoCommitPo = true;
+        this.config.autoCommitSo = true;
+        const price = 10;
+        var poId = await this.createPurchaseOrder(this.cache[partnerSupplier.name], this.cache[productPaper.name], price);
+        await this.deliverSupplies(poId);
+        var invoiceId = await this.createPurchaseInvoice(poId, 1, 10);
+        await this.paySupplierInvoice(invoiceId);
+        await this.lockPurchaseOrder(poId);
+    }
+
+    /* END add data*/
+
     async preload() {
         try {
             await this.getAccountIdByCode('1001');

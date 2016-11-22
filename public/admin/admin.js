@@ -10,10 +10,10 @@
         if (!item.showDetail) {
             item.showDetail = false;
         }
-        if (item.check) {
+        if (item.check && typeof item.check === 'string') {
             item.check = JSON.parse(item.check);
         }
-        if (item.inspect) {
+        if (item.inspect && typeof item.inspect === 'string') {
             item.inspect = JSON.parse(item.inspect);
         }
         return item;
@@ -36,6 +36,7 @@
                     // use the socket as usual
                     console.log('connected');
                     socket.on('db_state', (msg) => {
+                        console.log('db_state', msg)
                         self.dbData(msg);
                     });
                 });
@@ -97,6 +98,24 @@
                     }).catch(function (ex) {
                         console.log('parsing failed', ex);
                     });
+            },
+            check: function (item) {
+                Vue.set(item, 'isChecking', true);
+                fetch('/api/check/' + item.name)
+                .then(function (response) {
+                    Vue.set(item, 'isChecking', false);
+                }).catch(function (ex) {
+                    Vue.set(item, 'isChecking', false);
+                });
+            },
+            inspect: function (item) {
+                Vue.set(item, 'isInspecting', true);
+                fetch('/api/inspect/' + item.name)
+                .then(function (response) {
+                    Vue.set(item, 'isInspecting', false);
+                }).catch(function (ex) {
+                    Vue.set(item, 'isInspecting', false);
+                });
             }
         },
 
@@ -106,6 +125,11 @@
             },
             date: function (date) {
                 return moment(date).format('YYYY-MM-DD, hh:mm:ss');
+            },
+            countValid: function (l) {
+                return l.filter(function (i) {
+                    return i.valid;
+                }).length;
             }
         }
 

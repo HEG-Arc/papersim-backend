@@ -20,7 +20,7 @@
                 var interval = setInterval(function(){
                     self.progress = self.progress + 20 % 100;
                 }, 50);
-                fetch('/check/' + this.company)
+                fetch('/api/check/' + this.company)
                 .then(function(response) {
                     return response.json();
                 }).then(function(json) {

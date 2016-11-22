@@ -154,20 +154,26 @@ function prepareAdapterForDB(name: string): Promise<OdooAdapter> {
           username: res[0],
           password: res[1]
         });
-        odooAdapter.updateGameStateAndDay(game);
-        resolve(odooAdapter);
+        if (odooAdapter) {
+          odooAdapter.updateGameStateAndDay(game);
+          resolve(odooAdapter);
+        } else {
+          return reject('no account found');
+        }
       }
     });
   });
 }
 
-app.get('/check/:name', (req: express.Request, res: express.Response) => {
+app.get('/api/check/:name', (req: express.Request, res: express.Response) => {
   prepareAdapterForDB(req.params.name).then((odooAdapter) => {
     odooAdapter.checkConfig().then((result) => {
       updateDB(req.params.name, 'check', JSON.stringify(result))
       res.json(result);
     });
-  })
+  }).catch((err) => {
+    res.send(404);
+  });
 });
 
 app.get('/inspect/:name', (req: express.Request, res: express.Response) => {

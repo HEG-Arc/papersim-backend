@@ -165,9 +165,31 @@ function prepareAdapterForDB(name: string): Promise<OdooAdapter> {
   });
 }
 
-app.get('/api/check/:name', (req: express.Request, res: express.Response) => {
+app.get('/api/check/:name/:type?', (req: express.Request, res: express.Response) => {
   prepareAdapterForDB(req.params.name).then((odooAdapter) => {
-    odooAdapter.checkConfig().then((result) => {
+    console.log(req.params.name, req.params.type);
+    let f:Function = odooAdapter.checkConfig;
+    switch(req.params.type) {
+      case 'suppliers':
+        f = odooAdapter.checkSuppliers;
+        break;
+      case 'customers':
+        f = odooAdapter.checkCustomers;
+        break;
+      case 'uoms':
+        f = odooAdapter.checkUoMs;
+        break;
+      case 'supplyproducts':
+        f = odooAdapter.checkSupplyProducts;
+        break;
+      case 'marketproducts':
+        f = odooAdapter.checkMarketProducts;
+        break;
+      case 'boms':
+        f = odooAdapter.checkBOMs;
+        break;
+    }
+    return f.call(odooAdapter).then((result: any) => {
       updateDB(req.params.name, 'check', JSON.stringify(result))
       res.json(result);
     });
@@ -176,7 +198,7 @@ app.get('/api/check/:name', (req: express.Request, res: express.Response) => {
   });
 });
 
-app.get('/inspect/:name', (req: express.Request, res: express.Response) => {
+app.get('/api/inspect/:name', (req: express.Request, res: express.Response) => {
   prepareAdapterForDB(req.params.name).then((odooAdapter) => {
     odooAdapter.inspect().then((result) => {
       updateDB(req.params.name, 'inspect', JSON.stringify(result))
@@ -320,6 +342,14 @@ app.post('/admin/create', jsonParser, (req: express.Request, res: express.Respon
     });
 
   });
+  res.end();
+});
+
+app.get('/api/admin/test/create', (req: express.Request, res: express.Response) => {
+  const name = 'edu-paper2';
+  redisAdminClient.sadd(DB_KEY, name);
+  const email = `edu-paper@mailinator.com`;
+  updateDBState(name, 'activated', 'email', email, 'password', defaultPassword);
   res.end();
 });
 

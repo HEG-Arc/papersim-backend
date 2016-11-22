@@ -88,7 +88,7 @@
                         <div class="col-md-3" v-bind:title="item.password">{{ item.email }}</div>
                         <div class="col-md-2">{{ item.state }}</div>
                         <div class="col-md-2">{{ item.date | date }}</div>
-                        <div class="col-md-3"><a v-bind:href="'../inspect/'+item.name" class="btn btn-default" target="_blank">Inspect</a> <a  class="btn btn-primary" v-bind:href="'../check/'+item.name" target="_blank">Check</a></div>
+                        <div class="col-md-3"><a v-bind:href="'../api/inspect/'+item.name" class="btn btn-default" target="_blank">Inspect</a> <a  class="btn btn-primary" v-bind:href="'../api/check/'+item.name" target="_blank">Check</a></div>
                     </div>
                     <div class="row" v-if="item.showDetail">
                         <div class="col-md-12">

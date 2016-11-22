@@ -478,7 +478,7 @@ export class OdooAdapter {
         ]);
 
 
-        if(checked[2].valid && checked[3].valid) {
+        if(checked[3].valid && checked[4].valid && checked[5].valid) {
             checked.push(
                 await this.check('BOM', async () => {
                     return this.checkBOM(this.makeCardBom(checked[5].result, checked[3].result, checked[4].result));
@@ -494,6 +494,132 @@ export class OdooAdapter {
 
         return checked;
     }
+
+    /* Partial checks for gitbook tutorial */
+
+    async checkSuppliers() {
+        this.gameState = this.game.getState();
+        // parallelized
+        let checked = await Promise.all([
+            this.check(partnerSupplier.name, async () => {
+                return this.checkPartner(partnerSupplier);
+            }),
+            this.check(partnerSupplier2.name, async () => {
+                return this.checkPartner(partnerSupplier2);
+            })
+        ]);
+        return checked;
+    }
+
+    async checkCustomers() {
+        this.gameState = this.game.getState();
+
+        // parallelized
+        let checked = await Promise.all([
+            this.check(partnerMarket.name, async () => {
+                return this.checkPartner(partnerMarket);
+            })
+        ]);
+        return checked;
+    }
+
+    async checkUoMs() {
+        this.gameState = this.game.getState();
+
+        // parallelized
+        let checked = await Promise.all([
+            this.check(packUoM.name, async () => {
+                return this.checkUoM(packUoM);
+            })
+        ]);
+
+        return checked;
+    }
+
+    async checkSupplyProducts() {
+        this.gameState = this.game.getState();
+
+        let checkUoM = await this.check(packUoM.name, async () => {
+            return this.checkUoM(packUoM);
+        });
+
+        productStar.uom_po_id = checkUoM.result;
+
+        // parallelized
+        let checked = await Promise.all([
+            this.check(productPaper.name, async () => {
+                let woodId = await this.checkProduct(productPaper);
+                this.updateProductImage(woodId, 'assets/paper.jpg');
+                return woodId
+            }),
+            this.check(productStar.name, async () => {
+                let starId = await this.checkProduct(productStar);
+                this.updateProductImage(starId, 'assets/star.jpg');
+                return starId;
+            })
+        ]);
+
+        return checked;
+    }
+
+    async checkMarketProducts() {
+        this.gameState = this.game.getState();
+
+        // parallelized
+        let checked = await Promise.all([
+            this.check(productCard.name, async () => {
+                let paperId = await this.checkProduct(productCard);
+                this.updateProductImage(paperId, 'assets/card.jpg');
+                return paperId;
+            })
+        ]);
+
+        return checked;
+    }
+
+    async checkBOMs() {
+        this.gameState = this.game.getState();
+
+        let checkUoM = await this.check(packUoM.name, async () => {
+            return this.checkUoM(packUoM);
+        });
+
+        productStar.uom_po_id = checkUoM.result;
+
+
+        // parallelized
+        let checked = await Promise.all([
+            this.check(productPaper.name, async () => {
+                let woodId = await this.checkProduct(productPaper);
+                this.updateProductImage(woodId, 'assets/paper.jpg');
+                return woodId
+            }),
+            this.check(productStar.name, async () => {
+                let starId = await this.checkProduct(productStar);
+                this.updateProductImage(starId, 'assets/star.jpg');
+                return starId;
+            }),
+            this.check(productCard.name, async () => {
+                let paperId = await this.checkProduct(productCard);
+                this.updateProductImage(paperId, 'assets/card.jpg');
+                return paperId;
+            })
+        ]);
+
+
+        if(checked[0].valid && checked[1].valid && checked[2].valid) {
+            checked.push(
+                await this.check('BOM', async () => {
+                    return this.checkBOM(this.makeCardBom(checked[2].result, checked[0].result, checked[1].result));
+            }));
+        } else {
+            checked.push({'name': 'BOM', valid: false});
+        }
+
+        return checked;
+    }
+
+    /* end partial checks */
 
     async preload() {
         try {

@@ -31,7 +31,7 @@ function zeroPadding(number: number): string {
 // Game configs
 
 export let packUoM = {
-    name: 'Pack',
+    name: 'Paquet',
     category_id: 1, // unit
     uom_type: 'bigger',
     factor_inv: 10,
@@ -140,9 +140,14 @@ export class OdooAdapter {
 
     updateGameStateAndDay(game: Game) {
         this.gameState = game.getState();
-        this.currentDayTime = simDayToDateTime(this.gameState.currentDay);
-        this.currentDay = this.currentDayTime.slice(0, 10);
+        this.updateGameDay(this.gameState.currentDay);
         console.log(this.gameState, this.currentDayTime, this.currentDay);
+    }
+
+    updateGameDay(day: number) {
+        this.currentDayTime = simDayToDateTime(day);
+        this.currentDay = this.currentDayTime.slice(0, 10);
+        console.log(`\n\n ---- DAY ${day} -----\n\n`);
     }
 
     async stateListener(game: Game, params: { from: string, to: string, payload: any }) {
@@ -211,7 +216,7 @@ export class OdooAdapter {
                     await this.paySupplierInvoice(invoiceId);
                     await this.lockPurchaseOrder(this.cacheDailyPoId[params.payload.supplyForPurchaseDay]);
                     // produce new delivered qty
-                    await this.produce(this.currentDay, qty, qty * this.gameState.productionRawToFinished);
+                    await this.produce(this.currentDay, qty * this.gameState.productionRawToFinished);
                 }
                 break;
         }
@@ -623,17 +628,74 @@ export class OdooAdapter {
 
     /* Add data for exercice*/
 
+    async buy(supplierName: string, productName: string, price:number, quantity:number){
+        await this.updateSupplierProductPrice(this.cache[supplierName], this.cache[productName], price);
+        let poId = await this.createPurchaseOrder(this.cache[supplierName], this.cache[productName], price, quantity);
+        poId = await this.readAndCheckPo(poId);
+        this.deliverSupplies(poId);
+        let invoiceId = await this.createPurchaseInvoice(poId, quantity, price);
+        this.paySupplierInvoice(invoiceId);
+    }
+
+    async sell(customerName: string, productName: string, price:number, quantity: number){
+        await this.updateSalesProductPrice(this.cache[productName], price);
+        var soId = await this.createSalesOrder(this.cache[customerName], this.cache[productName], price, quantity);
+        var soId = await this.readAndCheckSo(soId);
+        await this.deliverSales(soId);
+        var invoiceId= await this.createCustomerInvoice(soId);
+        await this.payCustomerInvoice(invoiceId, quantity * price);
+    }
+
     async addQuizData() {
         await this.preload();
         await this.checkConfig();
         this.config.autoCommitPo = true;
         this.config.autoCommitSo = true;
-        const price = 10;
-        var poId = await this.createPurchaseOrder(this.cache[partnerSupplier.name], this.cache[productPaper.name], price);
-        await this.deliverSupplies(poId);
-        var invoiceId = await this.createPurchaseInvoice(poId, 1, 10);
-        await this.paySupplierInvoice(invoiceId);
-        await this.lockPurchaseOrder(poId);
+
+        // day1
+        this.updateGameDay(1);
+        await this.createAccountMove('CSH1', '1001', '2800', 300, 'CASH');
+        await this.createAccountMove('CSH1', '6800', '1001', 100, 'Locaux');
+
+        // 1.1 100 packs de gommettes 1000 à .15
+        await this.buy(partnerSupplier2.name, productStar.name, 0.15, 1000);
+
+        // 1.1 30 papier à 4
+        await this.buy(partnerSupplier.name, productPaper.name, 4, 30);
+
+        // 1.1 produire 180 cartes
+        await this.produce('2016-01-01', 180);
+
+        // day2
+        this.updateGameDay(2);
+        // 1.2 ventes 80 à 4
+        this.sell(partnerMarket.name, productCard.name, 4, 80);
+
+        // 1.2 60 papier à 3
+        this.buy(partnerSupplier.name, productPaper.name, 3, 60);
+
+        // 1.2 produire 300 cartes
+        await this.produce('2016-01-02', 300);
+
+        // day 3
+        this.updateGameDay(3);
+        // 1.3 ventes 100 à 3
+        await this.sell(partnerMarket.name, productCard.name, 3, 100);
+
+        this.updateGameDay(4);
+        // 1.4 ventes 100 à 3
+        await this.sell(partnerMarket.name, productCard.name, 3, 100);
+
+        this.updateGameDay(5);
+        // 1.5 ventes 200 à 2
+        await this.sell(partnerMarket.name, productCard.name, 2, 200);
+
+        this.updateGameDay(6);
+        // day 6
+        //1.6 ventes 10 à 5
+        await this.sell(partnerMarket.name, productCard.name, 5, 10);
+        await this.createAccountMove('CSH1', '5000', '1001', 300, 'Salaires');
+
     }
 
     /* END add data*/
@@ -797,6 +859,7 @@ export class OdooAdapter {
         });
     }
 
+    /* TODO refactor or remove for createAccountMove */
     async setInitialFund(amount: number): Promise<any> {
         let journalId = await this.getJournalIdByCode('CSH1');
         let cashAccountId = await this.getAccountIdByCode('1001');
@@ -833,6 +896,42 @@ export class OdooAdapter {
         });
     }
 
+    async createAccountMove(journal:string, debit:string, credit:string, amount:number, label:string): Promise<any> {
+        let journalId = await this.getJournalIdByCode(journal);
+        let debitId = await this.getAccountIdByCode(debit);
+        let creditId = await this.getAccountIdByCode(credit);
+        return this.execute((resolve: Function, reject: Function) => {
+            this.odoo.create('account.move', {
+                journal_id: journalId,
+                date: this.currentDay,
+                line_ids: [[0, false,
+                    {
+                        credit: 0,
+                        amount_currency: 0,
+                        account_id: debitId,
+                        debit: amount,
+                        name: label,
+                    }], [0, false,
+                        {
+                            credit: amount,
+                            amount_currency: 0,
+                            account_id: creditId,
+                            debit: 0,
+                            name: label,
+                        }]]
+            }, (err: any, res: any) => {
+                if (err) {
+                    return this.createDefaultResponseHandler(resolve, reject)(err, res);
+                }
+                this.odoo.rpc_call('/web/dataset/call_button', {
+                    model: 'account.move',
+                    method: 'post',
+                    args: [[res]]
+                }, this.createDefaultResponseHandler(resolve, reject));
+            });
+        });
+    }
+
     async updateStockMoveDate(domain: any[], date: string): Promise<any> {
         return this.execute((resolve: Function, reject: Function) => {
             this.odoo.search('stock.move', { domain: domain }, (err: any, res: any) => {
@@ -855,6 +954,7 @@ export class OdooAdapter {
     async updateSupplierProductPrice(partnerId: number, productId: number, price: number): Promise<any> {
         return this.execute((resolve, reject) => {
             this.odoo.update('product.template', productId, {
+                'standard_price': price,
                 'seller_ids': [
                     [0, false, {
                         name: partnerId,
@@ -867,7 +967,7 @@ export class OdooAdapter {
         });
     }
 
-    async createPurchaseOrder(partnerId: number, productId: number, price: number): Promise<any> {
+    async createPurchaseOrder(partnerId: number, productId: number, price: number, quantity: number =  this.gameState.supplierMaxOrderSize): Promise<any> {
         let simDayDelivery = this.gameState.currentDay + this.gameState.supplierDayToPay;
         let datePlanned = simDayToDateTime(simDayDelivery);
         let po: any = {
@@ -876,7 +976,7 @@ export class OdooAdapter {
             order_line: [[0, false,{
                 product_id: productId,
                 date_planned: datePlanned,
-                product_qty: this.gameState.supplierMaxOrderSize,
+                product_qty: quantity,
                 product_uom: 1,
                 price_unit: price,
                 taxes_id: [],
@@ -1081,7 +1181,7 @@ export class OdooAdapter {
         });
     }
 
-    async createSalesOrder(customerId: number, productId: number, price: number): Promise<any> {
+    async createSalesOrder(customerId: number, productId: number, price: number, quantity:number = 1): Promise<any> {
         let so: any = {
             partner_id: customerId,
             partner_invoice_id: customerId,
@@ -1092,7 +1192,7 @@ export class OdooAdapter {
             order_line: [[0, false,
             {
                 price_unit: price,
-                product_uom_qty: 1,
+                product_uom_qty: quantity,
                 product_id: productId,
                 product_uom: 1,
                 tax_id: [],
@@ -1211,8 +1311,8 @@ export class OdooAdapter {
         });
     }
 
-    async produce(currentDayTime:string, quantitySource: number, quantityProduced: number): Promise<any> {
-        //TODO return promise?
+    async produce(currentDayTime:string, quantityProduced: number): Promise<any> {
+
 
         // create production
         let mo:any = {

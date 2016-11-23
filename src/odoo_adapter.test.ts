@@ -71,7 +71,7 @@ async function testSupply(){
 
 async function testMrp(){
     console.log('produce');
-    await odooAdapter.produce('2016-01-01', 1, 6);
+    await odooAdapter.produce('2016-01-01', 6);
 }
 
 test();

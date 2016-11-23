@@ -89,7 +89,7 @@
             },
             getDBS: function (event) {
                 var self = this;
-                fetch('/admin/db.test.json')
+                fetch('/admin/db')
                     .then(function (response) {
                         return response.json();
                     }).then(function (json) {

@@ -114,13 +114,13 @@
                 </div>
                 <div class="row mail-select-header">
                     <div class="col-md-3">Name</div>
-                    <div class="col-md-4">Check</div>
+                    <div class="col-md-3">Check</div>
                     <div class="col-md-1">State</div>
                     <div class="col-md-2">Date</div>
-                    <div class="col-md-2">Actions</div>
+                    <div class="col-md-3">Actions</div>
                 </div>
                 <div v-if="!filter || (item.name.indexOf(filter) > -1 || item.state.indexOf(filter) > -1)" v-for="(item, index) in DBS" track-by="item.name" class="mail-select">
-                    <div class="row">
+                    <div class="row" v-if="item.state != 'renamed'">
                         <div class="col-md-3">
                             <p>
                                 <button type="button" class="btn btn-default" v-bind:class="{'btn-primary': item.showDetail}" v-on:click="item.showDetail = !item.showDetail"><span class="glyphicon glyphicon-search"></span></button>
@@ -128,13 +128,24 @@
                                 <strong><a v-bind:href="'https://'+item.name+'.odoo.com/web/login?login='+item.email " v-bind:title="item.password">{{ item.name }}</a></strong>
                             </p>
                             </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <span class="label" v-bind:class="{'label-success': c.valid, 'label-danger': !c.valid}" v-for="c in item.check">{{c.name}}</span>
                         </div>
                         <div class="col-md-1">{{ item.state }}</div>
                         <div class="col-md-2">{{ item.date | date }}</div>
-                        <div class="col-md-2"><button v-on:click="inspect(item)" class="btn btn-default"><span v-if="item.isInspecting" class="glyphicon glyphicon-repeat normal-right-spinner"></span> Inspect</button>
+                        <div class="col-md-3"><button v-on:click="inspect(item)" class="btn btn-default"><span v-if="item.isInspecting" class="glyphicon glyphicon-repeat normal-right-spinner"></span> Inspect</button>
                         <button  class="btn btn-primary" v-on:click="check(item)"><span v-if="item.isChecking" class="glyphicon glyphicon-repeat normal-right-spinner"></span> Check</button></div>
+                    </div>
+                    <div class="row" v-if="item.state == 'renamed'">
+                        <div class="col-md-3">
+                            <p>
+                             <button type="button" class="btn btn-default" disabled><span class="glyphicon glyphicon-search"></span></button>
+                             &nbsp;&nbsp;{{ item.name }}
+                            </p>
+                        </div>
+                        <div class="col-md-3">to: {{ item.to }}</div>
+                        <div class="col-md-1">{{ item.state }}</div>
+                        <div class="col-md-2">{{ item.date | date }}</div>
                     </div>
                     <div class="row" v-if="item.showDetail">
                         <div class="col-md-12">

@@ -44,7 +44,8 @@
 
         const results = [];
         while (i < count) {
-            results.push(prefix + code.join(''));
+            let name = prefix + code.join('');
+            results.push(name.toLowerCase());
             try{
                 increment();
             } catch(e) {

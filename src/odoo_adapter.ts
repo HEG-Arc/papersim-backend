@@ -639,10 +639,17 @@ export class OdooAdapter {
 
     async sell(customerName: string, productName: string, price:number, quantity: number){
         await this.updateSalesProductPrice(this.cache[productName], price);
+        console.log('createSalesOrder');
         var soId = await this.createSalesOrder(this.cache[customerName], this.cache[productName], price, quantity);
-        var soId = await this.readAndCheckSo(soId);
+        console.log('soId', soId);
+        console.log('acceptingSalesState');
+        soId = await this.readAndCheckSo(soId);
+        console.log('soId', soId);
+        console.log('salesDelvieryState');
         await this.deliverSales(soId);
         var invoiceId= await this.createCustomerInvoice(soId);
+        console.log('invoiceId', invoiceId);
+        console.log('customerPayingInvoicesState');
         await this.payCustomerInvoice(invoiceId, quantity * price);
     }
 
@@ -669,10 +676,10 @@ export class OdooAdapter {
         // day2
         this.updateGameDay(2);
         // 1.2 ventes 80 à 4
-        this.sell(partnerMarket.name, productCard.name, 4, 80);
+        await this.sell(partnerMarket.name, productCard.name, 4, 80);
 
         // 1.2 60 papier à 3
-        this.buy(partnerSupplier.name, productPaper.name, 3, 60);
+        await this.buy(partnerSupplier.name, productPaper.name, 3, 60);
 
         // 1.2 produire 300 cartes
         await this.produce('2016-01-02', 300);
@@ -1293,6 +1300,7 @@ export class OdooAdapter {
     }
 
     async payCustomerInvoice(invoiceId: number, amount: number): Promise<any> {
+        const journalId = await this.getJournalIdByCode('CSH1');
         return this.execute((resolve, reject) => {
             this.odoo.get('account.invoice', {ids: [invoiceId], fields: ['number']}, (err, res) => {
                 if (err) { return reject(err); }
@@ -1300,7 +1308,7 @@ export class OdooAdapter {
                     payment_type: 'inbound',
                     partner_type: 'customer',
                     partner_id: this.cache[partnerMarket.name],
-                    journal_id: this.cache['INV'],
+                    journal_id: journalId,
                     payment_method_id: 1, // TODO: lookup cash?
                     amount: amount, // TODO: from invoice or sim??
                     payment_date: this.currentDay,

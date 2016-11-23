@@ -190,6 +190,7 @@ app.get('/api/check/:name/:type?', (req: express.Request, res: express.Response)
         break;
     }
     return f.call(odooAdapter).then((result: any) => {
+      //TODO: object assign so that partial check do not overwrite
       updateDB(req.params.name, 'check', JSON.stringify(result))
       res.json(result);
     });

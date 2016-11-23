@@ -26,7 +26,8 @@
             pattern: '01',
             count: 1,
             newDBS: [],
-            DBS: []
+            DBS: [],
+            filter: ''
         },
         created: function () {
             let self = this;
@@ -127,6 +128,9 @@
                 return moment(date).format('YYYY-MM-DD, hh:mm:ss');
             },
             countValid: function (l) {
+                if (!l) {
+                    return 0;
+                }
                 return l.filter(function (i) {
                     return i.valid;
                 }).length;

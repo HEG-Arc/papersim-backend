@@ -338,6 +338,7 @@ app.get('/admin/db', (req: express.Request, res: express.Response) => {
 app.post('/admin/create', jsonParser, (req: express.Request, res: express.Response) => {
   // get from post
   req.body.forEach((name: string) => {
+    name = name.toLowerCase();
     if (name === DB_KEY) {
       return;
     }
@@ -351,6 +352,7 @@ app.post('/admin/create', jsonParser, (req: express.Request, res: express.Respon
       // update redis
       updateDBState(db, 'created');
       if (db !== name) {
+        redisAdminClient.sadd(DB_KEY, db);
         updateDBState(name, 'renamed', 'to', db);
       }
     });

@@ -4,7 +4,7 @@ import { OdooAdapter, productCard, productPaper, partnerMarket, partnerSupplier}
 let game = new Game();
 game.start('test');
 let odooAdapter:OdooAdapter = game.addCompany('A1', {
-    database: 'edu-paper3',
+    database: 'edu-paper2',
     username: 'edu-paper@mailinator.com',
     password: '12345678'
 });

@@ -248,7 +248,12 @@ export class OdooAdapter {
     createDefaultResponseHandler(resolve: Function, reject: Function): (err: any, result: any) => void {
         return (err, result) => {
             if (err) {
-                console.log('ERR', err);
+                console.error('ERR', err);
+                ravenClient.captureException(err, {
+                    extra: {
+                        database: this.company.odoo.database
+                    }
+                });
                 return reject(err);
             }
             console.log('INFO', result);
@@ -393,6 +398,19 @@ export class OdooAdapter {
                 }, this.createDefaultResponseHandler(resolve, reject));
             });
             console.log('userid', userId);
+            // make the user not a client
+            this.odoo.search('res.partner', {
+            domain: [
+                    ['email', '=', 'boris.edu-paper2@odoosim.ch']
+                ]
+            }, (err: any, res: any) => {
+                if(res.length > 0) {
+                    this.odoo.update('res.partner', res[0], {
+                        customer: false
+                    }, (err2: any, res2:any) => {
+                    });
+                }
+            });
 
             this.odoo.create('change.password.wizard', {
                 user_ids: [[0, false, {

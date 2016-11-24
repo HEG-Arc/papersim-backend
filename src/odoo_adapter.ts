@@ -215,6 +215,7 @@ export class OdooAdapter {
                         await this.deliverSupplies(this.cacheDailyPoId[params.payload.supplyForPurchaseDay]);
                         // invoice payment
                         let invoiceId: number = await this.createPurchaseInvoice(this.cacheDailyPoId[params.payload.supplyForPurchaseDay],
+                                this.cache[productPaper.name],
                                 qty, params.payload.price);
                         await this.paySupplierInvoice(invoiceId);
                         await this.lockPurchaseOrder(this.cacheDailyPoId[params.payload.supplyForPurchaseDay]);
@@ -657,7 +658,7 @@ export class OdooAdapter {
         let poId = await this.createPurchaseOrder(this.cache[supplierName], this.cache[productName], price, quantity);
         poId = await this.readAndCheckPo(poId);
         this.deliverSupplies(poId);
-        let invoiceId = await this.createPurchaseInvoice(poId, quantity, price);
+        let invoiceId = await this.createPurchaseInvoice(poId, this.cache[productName], quantity, price);
         this.paySupplierInvoice(invoiceId);
     }
 
@@ -1011,7 +1012,7 @@ export class OdooAdapter {
                 product_uom: 1,
                 price_unit: price,
                 taxes_id: [],
-                name: productPaper.name // TODO: as parameter // description field in PO
+                name: 'Produit' // TODO: as parameter // description field in PO
             }]],
             date_planned: datePlanned
         };
@@ -1098,16 +1099,17 @@ export class OdooAdapter {
         return this.validatePicking(pickingId[0]);
     }
 
-    async createPurchaseInvoice(poId: number, qty: number, price: number): Promise<any> {
+    async createPurchaseInvoice(poId: number, productId: number, qty: number, price: number): Promise<any> {
+        const journalId = await this.getJournalIdByCode('BILL');
         return this.execute((resolve, reject) => {
             this.odoo.create('account.invoice', {
                 partner_id: this.cache[partnerSupplier.name],
                 origin: 'PO' + zeroPadding(poId),
                 date_invoice: this.currentDay,
                 date_due: this.currentDay,
-                journal_id: this.cache['BILL'],
+                journal_id: journalId,
                 type: 'in_invoice',
-                invoice_line_ids: [[0, false,
+                invoice_line_ids: [[0, false, // TODO multi line?
                     {
                         purchase_id: poId,
                         name: 'PO' + zeroPadding(poId),
@@ -1116,7 +1118,7 @@ export class OdooAdapter {
                         invoice_line_tax_ids: [],
                         discount: 0,
                         quantity: qty, // from sim for now
-                        product_id: this.cache[productPaper.name],
+                        product_id: productId, //TODO lookup
                         account_id: this.cache['4200'], // lookup
                         purchase_line_id: poId // test?
                     }]],
@@ -1169,6 +1171,7 @@ export class OdooAdapter {
 
 
     async paySupplierInvoice(invoiceId: number): Promise<any> {
+        const journalId = await this.getJournalIdByCode('BILL');
         return this.execute((resolve, reject) => {
             this.odoo.get('account.invoice', {ids: [invoiceId], fields: ['number']}, (err, res) => {
                 if (err) { return reject(err); }
@@ -1176,7 +1179,7 @@ export class OdooAdapter {
                     payment_type: 'outbound',
                     partner_type: 'supplier',
                     partner_id: this.cache[partnerSupplier.name],
-                    journal_id: this.cache['BILL'],
+                    journal_id: journalId,
                     payment_method_id: 1, // TODO: lookup cash?
                     amount: 10, // TODO: from invoice or sim??
                     payment_date: this.currentDay,
@@ -1308,7 +1311,11 @@ export class OdooAdapter {
                 }, (err: any, res: any) => {
                     if (err) { return reject(err); }
                     let invId = res.res_id;
-                    // odoo 10 action
+                    this.odoo.update('account.invoice', invId, {
+                        date_invoice: this.currentDay,
+                        date_due: this.currentDay
+                    }, (err: any, res: any) => {
+                     // odoo 10 action
                      console.log('open invoice');
                      this.odoo.rpc_call('/web/dataset/call_button', {
                         model: 'account.invoice',
@@ -1317,6 +1324,7 @@ export class OdooAdapter {
                         }, (err: any, res: any) => {
                             this.createDefaultResponseHandler(resolve, reject)(err, invId);
                         });
+                    });
                 });
 
             });

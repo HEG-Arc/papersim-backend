@@ -16,7 +16,15 @@ const raven = require("raven");
 export const ravenClient = new raven.Client();
 ravenClient.patchGlobal();
 process.on('unhandledRejection', (reason:any, p:Promise<any>) => {
-    ravenClient.captureException(reason);
+    if(typeof reason === 'object' && reason.hasOwnProperty('data')) {
+      ravenClient.captureException(new Error(reason.message), {
+          extra: {
+              data: reason.data
+          }
+      });
+    } else {
+      ravenClient.captureException(reason);
+    }
     console.error('unhandledRejection', reason);
 });
 

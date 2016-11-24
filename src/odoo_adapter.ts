@@ -344,9 +344,11 @@ export class OdooAdapter {
             let cardId = await this.createProduct(productCard);
             let bom = this.makeCardBom(cardId, paperId, starId);
             await this.createBOM(bom);
+            /*
             await this.setInitialProductQuantity(paperId, this.gameState.initialStock);
             await this.setInitialProductQuantity(starId, this.gameState.initialStock);
             await this.setInitialFund(this.gameState.initialCash);
+            */
         } catch (e) {
             console.log('ERR', e);
         }

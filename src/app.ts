@@ -240,6 +240,14 @@ app.get('/api/adduser/:dbname/:user', (req: express.Request, res: express.Respon
   res.end();
 });
 
+app.get('/api/createconfig/:name', (req: express.Request, res: express.Response) => {
+  prepareAdapterForDB(req.params.name).then((odooAdapter) => {
+    /* todo promise */
+    odooAdapter.createConfig();
+    res.end();
+  })
+});
+
 /* helper to scan redis (could try streaming version) */
 function fullscan(client: redis.RedisClient, pattern: string, callback: (err: any, results: any) => void) {
   let results: any[] = [];

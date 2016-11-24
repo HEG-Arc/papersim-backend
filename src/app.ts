@@ -229,7 +229,7 @@ app.get('/api/updatename/:name', (req: express.Request, res: express.Response) =
   })
 });
 
-app.get('/adduser/:dbname/:user', (req: express.Request, res: express.Response) => {
+app.get('/api/adduser/:dbname/:user', (req: express.Request, res: express.Response) => {
   prepareAdapterForDB(req.params.dbname).then((odooAdapter) => {
     odooAdapter.createUser(req.params.user, defaultPassword).then(()=>{
       odooAdapter.inspect().then((result) => {

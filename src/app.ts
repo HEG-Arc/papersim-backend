@@ -221,7 +221,7 @@ app.post('/api/adddata/:name', (req: express.Request, res: express.Response) => 
 });
 
 
-app.get('/update/:name', (req: express.Request, res: express.Response) => {
+app.get('/api/updatename/:name', (req: express.Request, res: express.Response) => {
   prepareAdapterForDB(req.params.name).then((odooAdapter) => {
     /* todo promise */
     odooAdapter.updateNames();

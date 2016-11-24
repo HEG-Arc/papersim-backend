@@ -16,6 +16,7 @@
     "node-horseman": "^3.2.0",
     "node-uuid": "^1.4.7",
     "odoo": "github:saidimu/odoo#pull/8/head",
+    "raven": "^0.12.3",
     "redis": "^2.6.3",
     "socketio": "^1.0.0",
     "socketio-auth": "0.0.5",

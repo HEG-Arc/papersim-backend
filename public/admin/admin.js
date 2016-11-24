@@ -76,7 +76,7 @@
             },
             post: function (event) {
                 var self = this;
-                fetch('/admin/create', {
+                fetch('/api/admin/create', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -89,7 +89,7 @@
             },
             getDBS: function (event) {
                 var self = this;
-                fetch('/admin/db')
+                fetch('/api/admin/db')
                     .then(function (response) {
                         return response.json();
                     }).then(function (json) {

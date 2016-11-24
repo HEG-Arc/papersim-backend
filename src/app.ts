@@ -8,6 +8,11 @@ import * as redis from 'redis';
 import { Game, GameState, TestGame } from './sim';
 import { OdooAdapter } from './odoo_adapter';
 import { createDB, extrateActivationUrlFromMail, activationUrl2DB, activateDB } from './odoo_sass';
+const raven = require("raven");
+
+// env set SENTRY_DSN, SENTRY_ENVIRONMENT
+export const ravenClient = new raven.Client();
+ravenClient.patchGlobal();
 
 const webpush = require('web-push');
 const app = express();
@@ -72,6 +77,13 @@ redisMailSubClient.on("pmessage", (pattern: any, event: any, value: any) => {
 redisMailSubClient.psubscribe('__keyevent@0__:set');
 
 /* Web API */
+
+// The request handler must be the first item
+app.use(raven.middleware.express.requestHandler(ravenClient));
+
+app.get('/', function mainHandler(req, res) {
+    throw new Error('Broke!');
+});
 app.use(express.static('public'));
 // mail html5 mode
 app.get('/mail/*', function(req, res) {
@@ -240,14 +252,6 @@ app.get('/api/adduser/:dbname/:user', (req: express.Request, res: express.Respon
   res.end();
 });
 
-app.get('/api/createconfig/:name', (req: express.Request, res: express.Response) => {
-  prepareAdapterForDB(req.params.name).then((odooAdapter) => {
-    /* todo promise */
-    odooAdapter.createConfig();
-    res.end();
-  })
-});
-
 /* helper to scan redis (could try streaming version) */
 function fullscan(client: redis.RedisClient, pattern: string, callback: (err: any, results: any) => void) {
   let results: any[] = [];
@@ -309,13 +313,8 @@ app.get('/api/mail/:name/send', (req: express.Request, res: express.Response) =>
   });
 });
 
+
 // TODO: secure
-
-function updateNameOdoo(name: string) {
-  prepareAdapterForDB(name).then((odooAdapter) => {
-
-  });
-}
 
 function updateDB(name: string, ...args: any[]) {
   const msg: any = {
@@ -333,7 +332,15 @@ function updateDBState(name: string, state: string, ...args: any[]) {
   updateDB(name, 'state', state, ...args);
 }
 
-app.get('/admin/db', (req: express.Request, res: express.Response) => {
+app.get('/api/createconfig/:name', (req: express.Request, res: express.Response) => {
+  prepareAdapterForDB(req.params.name).then((odooAdapter) => {
+    /* todo promise */
+    odooAdapter.createConfig();
+    res.end();
+  })
+});
+
+app.get('/api/admin/db', (req: express.Request, res: express.Response) => {
   redisAdminClient.smembers(DB_KEY, (err: any, response: any) => {
     redisAdminClient.multi(response.map((key: string) => {
       return ['hgetall', key];
@@ -343,7 +350,7 @@ app.get('/admin/db', (req: express.Request, res: express.Response) => {
   });
 });
 
-app.post('/admin/create', jsonParser, (req: express.Request, res: express.Response) => {
+app.post('/api/admin/create', jsonParser, (req: express.Request, res: express.Response) => {
   // get from post
   req.body.forEach((name: string) => {
     name = name.toLowerCase();
@@ -376,6 +383,22 @@ app.get('/api/admin/test/create', (req: express.Request, res: express.Response) 
   updateDBState(name, 'activated', 'email', email, 'password', defaultPassword);
   res.end();
 });
+
+
+function onError(err:any, req: express.Request, res: any, next:any) {
+    // The error id is attached to `res.sentry` to be returned
+    // and optionally displayed to the user for support.
+    res.statusCode = 500;
+    res.end(res.sentry+'\n');
+}
+
+// The error handler must be before any other error middleware
+app.use(raven.middleware.express.errorHandler(ravenClient));
+
+// Optional fallthrough error handler
+app.use(onError);
+
+
 
 /* TODO delete */
 

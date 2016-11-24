@@ -94,10 +94,6 @@ redisMailSubClient.psubscribe('__keyevent@0__:set');
 
 // The request handler must be the first item
 app.use(raven.middleware.express.requestHandler(ravenClient));
-
-app.get('/', function mainHandler(req, res) {
-    throw new Error('Broke!');
-});
 app.use(express.static('public'));
 // mail html5 mode
 app.get('/mail/*', function(req, res) {

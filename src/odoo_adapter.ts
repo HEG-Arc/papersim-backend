@@ -21,7 +21,7 @@ function objectToDomain(obj: Object) {
 
 function simDayToDateTime(day:number):string {
      day = Math.max(day, 0);
-     return '2016-01-' + ('00' + (day + 1)).slice(-2) + ' 00:00:00';
+     return '2016-11-' + ('00' + (day + 1)).slice(-2) + ' 00:00:00';
 }
 
 function zeroPadding(number: number): string {
@@ -671,7 +671,7 @@ export class OdooAdapter {
         await this.buy(partnerSupplier.name, productPaper.name, 4, 30);
 
         // 1.1 produire 180 cartes
-        await this.produce('2016-01-01', 180);
+        await this.produce('2016-11-02', 180);
 
         // day2
         this.updateGameDay(2);
@@ -682,7 +682,7 @@ export class OdooAdapter {
         await this.buy(partnerSupplier.name, productPaper.name, 3, 60);
 
         // 1.2 produire 300 cartes
-        await this.produce('2016-01-02', 300);
+        await this.produce('2016-11-03', 300);
 
         // day 3
         this.updateGameDay(3);
@@ -691,7 +691,7 @@ export class OdooAdapter {
 
         this.updateGameDay(4);
         // 1.4 ventes 100 à 3
-        await this.sell(partnerMarket.name, productCard.name, 3, 100);
+        await this.sell(partnerMarket.name, productCard.name, 3, 60);
 
         this.updateGameDay(5);
         // 1.5 ventes 200 à 2
@@ -860,7 +860,7 @@ export class OdooAdapter {
                     method: 'action_done',
                     args: [[res]]
                 }, (err, res2) => {
-                    this.updateStockMoveDate([['inventory_id', '=', res]], '2016-01-01 00:00:00').then(resolve, reject);
+                    this.updateStockMoveDate([['inventory_id', '=', res]], '2016-11-01 00:00:00').then(resolve, reject);
                 });
             });
         });

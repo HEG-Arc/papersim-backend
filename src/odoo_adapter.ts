@@ -215,9 +215,10 @@ export class OdooAdapter {
                         await this.deliverSupplies(this.cacheDailyPoId[params.payload.supplyForPurchaseDay]);
                         // invoice payment
                         let invoiceId: number = await this.createPurchaseInvoice(this.cacheDailyPoId[params.payload.supplyForPurchaseDay],
+                            this.cache[partnerSupplier.name],
                                 this.cache[productPaper.name],
                                 qty, params.payload.price);
-                        await this.paySupplierInvoice(invoiceId);
+                        await this.paySupplierInvoice(invoiceId, this.cache[partnerSupplier.name], qty * 10); //TODO get price
                         await this.lockPurchaseOrder(this.cacheDailyPoId[params.payload.supplyForPurchaseDay]);
                         // produce new delivered qty
                         await this.produce(this.currentDay, qty * this.gameState.productionRawToFinished);
@@ -658,8 +659,8 @@ export class OdooAdapter {
         let poId = await this.createPurchaseOrder(this.cache[supplierName], this.cache[productName], price, quantity);
         poId = await this.readAndCheckPo(poId);
         this.deliverSupplies(poId);
-        let invoiceId = await this.createPurchaseInvoice(poId, this.cache[productName], quantity, price);
-        this.paySupplierInvoice(invoiceId);
+        let invoiceId = await this.createPurchaseInvoice(poId, this.cache[supplierName], this.cache[productName], quantity, price);
+        this.paySupplierInvoice(invoiceId, this.cache[supplierName], price * quantity);
     }
 
     async sell(customerName: string, productName: string, price:number, quantity: number){
@@ -836,9 +837,20 @@ export class OdooAdapter {
             });
         }
         return this.execute((resolve: Function, reject: Function) => {
+            // fix jounral code translation
+            let search: string | string[] = code;
+            let op = '=';
+            if (code === 'BILL') {
+                search = ['BILL', 'FACTU'];
+                op = 'in';
+            }
+            if (code === 'INV') {
+                search = ['INV', 'FAC'];
+                op = 'in';
+            }
             this.odoo.search('account.journal', {
                 domain: [
-                    ['code', '=', code]
+                    ['code', op, search]
                 ]
             }, this.createCacheResponseHandler(code, resolve, reject));
         });
@@ -1099,11 +1111,11 @@ export class OdooAdapter {
         return this.validatePicking(pickingId[0]);
     }
 
-    async createPurchaseInvoice(poId: number, productId: number, qty: number, price: number): Promise<any> {
+    async createPurchaseInvoice(poId: number, supplierId:number, productId: number, qty: number, price: number): Promise<any> {
         const journalId = await this.getJournalIdByCode('BILL');
         return this.execute((resolve, reject) => {
             this.odoo.create('account.invoice', {
-                partner_id: this.cache[partnerSupplier.name],
+                partner_id: supplierId, //TODO lookup?
                 origin: 'PO' + zeroPadding(poId),
                 date_invoice: this.currentDay,
                 date_due: this.currentDay,
@@ -1170,7 +1182,7 @@ export class OdooAdapter {
     }
 
 
-    async paySupplierInvoice(invoiceId: number): Promise<any> {
+    async paySupplierInvoice(invoiceId: number, partnerId: number, amount: number): Promise<any> {
         const journalId = await this.getJournalIdByCode('BILL');
         return this.execute((resolve, reject) => {
             this.odoo.get('account.invoice', {ids: [invoiceId], fields: ['number']}, (err, res) => {
@@ -1178,10 +1190,10 @@ export class OdooAdapter {
                 this.makePayment({
                     payment_type: 'outbound',
                     partner_type: 'supplier',
-                    partner_id: this.cache[partnerSupplier.name],
+                    partner_id: partnerId, // TODO: from invoice?
                     journal_id: journalId,
                     payment_method_id: 1, // TODO: lookup cash?
-                    amount: 10, // TODO: from invoice or sim??
+                    amount: amount, // TODO: from invoice or sim??
                     payment_date: this.currentDay,
                     communication: res[0].number,
                     invoice_ids: [[4, invoiceId, null]]

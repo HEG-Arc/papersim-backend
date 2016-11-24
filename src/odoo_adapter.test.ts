@@ -61,10 +61,10 @@ async function testSupply(){
     console.log('deliveringPurchasesState');
     await odooAdapter.deliverSupplies(poId);
     console.log('createPurchaseInvoice');
-    var invoiceId = await odooAdapter.createPurchaseInvoice(poId, odooAdapter.cache[productPaper.name], 1, 10);
+    var invoiceId = await odooAdapter.createPurchaseInvoice(poId, odooAdapter.cache[partnerSupplier.name], odooAdapter.cache[productPaper.name], 1, 10);
     console.log('invoiceId', invoiceId);
     console.log('paySupplierInvoice');
-    await odooAdapter.paySupplierInvoice(invoiceId);
+    await odooAdapter.paySupplierInvoice(invoiceId, odooAdapter.cache[partnerSupplier.name], 10);
     console.log('lockPurchaseOrder');
     await odooAdapter.lockPurchaseOrder(poId);
 }

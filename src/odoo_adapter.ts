@@ -249,9 +249,10 @@ export class OdooAdapter {
         return (err, result) => {
             if (err) {
                 console.error('ERR', err);
-                ravenClient.captureException(err, {
+                ravenClient.captureException(new Error(err.message), {
                     extra: {
-                        database: this.company.odoo.database
+                        database: this.company.odoo.database,
+                        data: err.data
                     }
                 });
                 return reject(err);

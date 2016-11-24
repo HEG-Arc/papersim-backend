@@ -400,8 +400,8 @@ export class OdooAdapter {
             console.log('userid', userId);
             // make the user not a client
             this.odoo.search('res.partner', {
-            domain: [
-                    ['email', '=', 'boris.edu-paper2@odoosim.ch']
+                domain: [
+                    ['email', '=', email]
                 ]
             }, (err: any, res: any) => {
                 if(res.length > 0) {

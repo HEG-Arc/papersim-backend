@@ -2,6 +2,7 @@
 import { Game, Company, GameState } from './sim';
 import * as fs from 'fs';
 import Odoo = require('odoo');
+import { ravenClient } from './app';
 
 // TODO: How are date input calculated??? GMT Offset...
 /*
@@ -158,68 +159,70 @@ export class OdooAdapter {
         */
 
         this.updateGameStateAndDay(game);
-        switch (params.to) {
-            // TODO error handling
-            case 'decidingMarketPriceState':
-                // setup market price and SO
-                await this.updateSalesProductPrice(this.cache[productCard.name], params.payload.price);
-                this.cacheDailySoId[this.gameState.currentDay] = await this.createSalesOrder(this.cache[partnerMarket.name],
-                                                                                             this.cache[productCard.name],
-                                                                                             params.payload.price);
-                break;
-            case 'acceptingSalesState':
-                // process confirmed SO
-                // check price correct? copy qty to sim
-                this.cacheDailySoId[this.gameState.currentDay] = await this.readAndCheckSo(this.cacheDailySoId[this.gameState.currentDay]);
-                break;
-            case 'salesDelvieryState':
-                // stock picking and invoicing
-                if ( this.cacheDailySoId[this.gameState.currentDay] ) {
-                    await this.deliverSales(this.cacheDailySoId[this.gameState.currentDay]);
-                    this.cacheDailyCustomerInvoiceId[this.gameState.currentDay] = await this.createCustomerInvoice(
-                        this.cacheDailySoId[this.gameState.currentDay]);
-                }
-                break;
-
-                //TODO: custom state for company
-            case 'customerPayingInvoicesState':
-                // make payment for invoice day-x
-                if ( this.cacheDailyCustomerInvoiceId[params.payload.payOutForDay] ) {
-                    await this.payCustomerInvoice(this.cacheDailyCustomerInvoiceId[params.payload.payOutForDay],
-                        params.payload.price * params.payload.sales[this.company.name]);
-                }
-                break;
-            case 'decidingSupplierPriceState':
-                // setup product price and PO
-                await this.updateSupplierProductPrice(this.cache[partnerSupplier.name],
-                                                      this.cache[productPaper.name],
-                                                      params.payload.price);
-                this.cacheDailyPoId[this.gameState.currentDay] = await this.createPurchaseOrder(this.cache[partnerSupplier.name],
-                                                                                                this.cache[productPaper.name],
+            switch (params.to) {
+                // TODO error handling
+                case 'decidingMarketPriceState':
+                    // setup market price and SO
+                    if (!params.payload) return;
+                    await this.updateSalesProductPrice(this.cache[productCard.name], params.payload.price);
+                    this.cacheDailySoId[this.gameState.currentDay] = await this.createSalesOrder(this.cache[partnerMarket.name],
+                                                                                                this.cache[productCard.name],
                                                                                                 params.payload.price);
-                break;
-            case 'acceptingPurchasesState':
-                // TODO: timer?
-                this.cacheDailyPoId[this.gameState.currentDay] = await this.readAndCheckPo(this.cacheDailyPoId[this.gameState.currentDay]);
-                break;
+                    break;
+                case 'acceptingSalesState':
+                    // process confirmed SO
+                    // check price correct? copy qty to sim
+                    this.cacheDailySoId[this.gameState.currentDay] = await this.readAndCheckSo(this.cacheDailySoId[this.gameState.currentDay]);
+                    break;
+                case 'salesDelvieryState':
+                    // stock picking and invoicing
+                    if ( this.cacheDailySoId[this.gameState.currentDay] ) {
+                        await this.deliverSales(this.cacheDailySoId[this.gameState.currentDay]);
+                        this.cacheDailyCustomerInvoiceId[this.gameState.currentDay] = await this.createCustomerInvoice(
+                            this.cacheDailySoId[this.gameState.currentDay]);
+                    }
+                    break;
 
-                //TODO: custom event for company
-            case 'deliveringPurchasesState':
-                // Get id from cache for right date
-                let qty: number = params.payload.orders[this.company.name];
-                if ( qty > 0) {
-                    // delivery and picking
-                    await this.deliverSupplies(this.cacheDailyPoId[params.payload.supplyForPurchaseDay]);
-                    // invoice payment
-                    let invoiceId: number = await this.createPurchaseInvoice(this.cacheDailyPoId[params.payload.supplyForPurchaseDay],
-                            qty, params.payload.price);
-                    await this.paySupplierInvoice(invoiceId);
-                    await this.lockPurchaseOrder(this.cacheDailyPoId[params.payload.supplyForPurchaseDay]);
-                    // produce new delivered qty
-                    await this.produce(this.currentDay, qty * this.gameState.productionRawToFinished);
-                }
-                break;
-        }
+                    //TODO: custom state for company
+                case 'customerPayingInvoicesState':
+                    // make payment for invoice day-x
+                    if ( this.cacheDailyCustomerInvoiceId[params.payload.payOutForDay] ) {
+                        await this.payCustomerInvoice(this.cacheDailyCustomerInvoiceId[params.payload.payOutForDay],
+                            params.payload.price * params.payload.sales[this.company.name]);
+                    }
+                    break;
+                case 'decidingSupplierPriceState':
+                    if (!params.payload) return;
+                    // setup product price and PO
+                    await this.updateSupplierProductPrice(this.cache[partnerSupplier.name],
+                                                        this.cache[productPaper.name],
+                                                        params.payload.price);
+                    this.cacheDailyPoId[this.gameState.currentDay] = await this.createPurchaseOrder(this.cache[partnerSupplier.name],
+                                                                                                    this.cache[productPaper.name],
+                                                                                                    params.payload.price);
+                    break;
+                case 'acceptingPurchasesState':
+                    // TODO: timer?
+                    this.cacheDailyPoId[this.gameState.currentDay] = await this.readAndCheckPo(this.cacheDailyPoId[this.gameState.currentDay]);
+                    break;
+
+                    //TODO: custom event for company
+                case 'deliveringPurchasesState':
+                    // Get id from cache for right date
+                    let qty: number = params.payload.orders[this.company.name];
+                    if ( qty > 0) {
+                        // delivery and picking
+                        await this.deliverSupplies(this.cacheDailyPoId[params.payload.supplyForPurchaseDay]);
+                        // invoice payment
+                        let invoiceId: number = await this.createPurchaseInvoice(this.cacheDailyPoId[params.payload.supplyForPurchaseDay],
+                                qty, params.payload.price);
+                        await this.paySupplierInvoice(invoiceId);
+                        await this.lockPurchaseOrder(this.cacheDailyPoId[params.payload.supplyForPurchaseDay]);
+                        // produce new delivered qty
+                        await this.produce(this.currentDay, qty * this.gameState.productionRawToFinished);
+                    }
+                    break;
+            }
     }
 
     destroy() {

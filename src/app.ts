@@ -8,11 +8,17 @@ import * as redis from 'redis';
 import { Game, GameState, TestGame } from './sim';
 import { OdooAdapter } from './odoo_adapter';
 import { createDB, extrateActivationUrlFromMail, activationUrl2DB, activateDB } from './odoo_sass';
+import 'source-map-support/register';
+
 const raven = require("raven");
 
 // env set SENTRY_DSN, SENTRY_ENVIRONMENT
 export const ravenClient = new raven.Client();
 ravenClient.patchGlobal();
+process.on('unhandledRejection', (reason:any, p:Promise<any>) => {
+    ravenClient.captureException(reason);
+    console.error('unhandledRejection', reason);
+});
 
 const webpush = require('web-push');
 const app = express();

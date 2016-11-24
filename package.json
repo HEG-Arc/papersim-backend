@@ -20,6 +20,7 @@
     "redis": "^2.6.3",
     "socketio": "^1.0.0",
     "socketio-auth": "0.0.5",
+    "source-map-support": "^0.4.6",
     "web-push": "^3.2.0"
   },
   "devDependencies": {

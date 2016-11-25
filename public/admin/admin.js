@@ -77,6 +77,7 @@
             post: function (event) {
                 var self = this;
                 fetch('/api/admin/create', {
+                    credentials: 'same-origin',
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -89,7 +90,9 @@
             },
             getDBS: function (event) {
                 var self = this;
-                fetch('/api/admin/db')
+                fetch('/api/admin/db', {
+                    credentials: 'same-origin'
+                })
                     .then(function (response) {
                         return response.json();
                     }).then(function (json) {
@@ -102,7 +105,9 @@
             },
             check: function (item) {
                 Vue.set(item, 'isChecking', true);
-                fetch('/api/check/' + item.name)
+                fetch('/api/check/' + item.name, {
+                    credentials: 'same-origin'
+                })
                 .then(function (response) {
                     Vue.set(item, 'isChecking', false);
                 }).catch(function (ex) {
@@ -111,7 +116,9 @@
             },
             inspect: function (item) {
                 Vue.set(item, 'isInspecting', true);
-                fetch('/api/inspect/' + item.name)
+                fetch('/api/inspect/' + item.name, {
+                    credentials: 'same-origin'
+                })
                 .then(function (response) {
                     Vue.set(item, 'isInspecting', false);
                 }).catch(function (ex) {

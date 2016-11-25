@@ -92,9 +92,52 @@ redisMailSubClient.psubscribe('__keyevent@0__:set');
 
 /* Web API */
 
+import * as passport from 'passport';
+import * as session from 'express-session';
+import * as cookieParser from 'cookie-parser';
+import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
+
 // The request handler must be the first item
 app.use(raven.middleware.express.requestHandler(ravenClient));
+app.use(cookieParser());
+app.use(session({secret: process.env.SESSION_SECRET || 'dev',
+  resave: false,
+  saveUninitialized: false}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.use(new JwtStrategy({
+  jwtFromRequest: ExtractJwt.fromBodyField('jwt'),
+  secretOrKey: process.env.JWT_SECRET
+}, (jwtPayload, done) => {
+  if((process.env.ADMINS || '').split(',').indexOf(jwtPayload.email) > -1) {
+    done(null, jwtPayload);
+  } else {
+    done(null, false);
+  }
+}));
+
+passport.serializeUser(function(user, done) {
+  done(null, user);
+});
+
+passport.deserializeUser(function(user, done) {
+  done(null, user);
+});
+
+function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
+    if (req.isAuthenticated()) {
+      next();
+    } else {
+      (<any> req.session).returnTo = req.url;
+      res.redirect(`https://marmix.ig.he-arc.ch/shibjwt/?reply_to=${process.env.HOST_URL || 'http://localhost'}/token`);
+    }
+}
+
+app.use('/admin', requireAdmin);
 app.use(express.static('public'));
+
+
 // mail html5 mode
 app.get('/mail/*', function(req, res) {
   res.sendFile(path.join(__dirname, '../public/mail/index.html'));
@@ -122,6 +165,15 @@ try {
 } catch(e) {
   subscriptions = {};
 }
+
+app.post('/token', urlencodeParser, passport.authenticate('jwt', {
+  successReturnToOrRedirect: '/admin',
+  failureRedirect: '/'
+}));
+
+app.get('/secure', requireAdmin, (req: express.Request, res: express.Response) => {
+  res.send(req.user);
+});
 
 app.get('/api/push/key', (req: express.Request, res: express.Response) => {
   res.send(vapidKeys.publicKey);
@@ -283,7 +335,6 @@ function fullscan(client: redis.RedisClient, pattern: string, callback: (err: an
   scan(0);
 }
 
-
 app.get('/api/mail/:name/list', (req: express.Request, res: express.Response) => {
   // TODO protect private mails?
   fullscan(redisMailClient, `${req.params.name}@odoosim.ch:*`, (err: any, results: any) => {
@@ -342,7 +393,7 @@ function updateDBState(name: string, state: string, ...args: any[]) {
   updateDB(name, 'state', state, ...args);
 }
 
-app.get('/api/createconfig/:name', (req: express.Request, res: express.Response) => {
+app.get('/api/createconfig/:name', requireAdmin, (req: express.Request, res: express.Response) => {
   prepareAdapterForDB(req.params.name).then((odooAdapter) => {
     /* todo promise */
     odooAdapter.createConfig();
@@ -350,7 +401,7 @@ app.get('/api/createconfig/:name', (req: express.Request, res: express.Response)
   })
 });
 
-app.get('/api/admin/db', (req: express.Request, res: express.Response) => {
+app.get('/api/admin/db', requireAdmin, (req: express.Request, res: express.Response) => {
   redisAdminClient.smembers(DB_KEY, (err: any, response: any) => {
     redisAdminClient.multi(response.map((key: string) => {
       return ['hgetall', key];
@@ -360,7 +411,7 @@ app.get('/api/admin/db', (req: express.Request, res: express.Response) => {
   });
 });
 
-app.post('/api/admin/create', jsonParser, (req: express.Request, res: express.Response) => {
+app.post('/api/admin/create', requireAdmin, jsonParser, (req: express.Request, res: express.Response) => {
   // get from post
   req.body.forEach((name: string) => {
     name = name.toLowerCase();
@@ -386,7 +437,7 @@ app.post('/api/admin/create', jsonParser, (req: express.Request, res: express.Re
   res.end();
 });
 
-app.get('/api/admin/test/create', (req: express.Request, res: express.Response) => {
+app.get('/api/admin/test/create', requireAdmin, (req: express.Request, res: express.Response) => {
   const name = 'edu-paper2';
   redisAdminClient.sadd(DB_KEY, name);
   const email = `edu-paper@mailinator.com`;
@@ -399,7 +450,7 @@ function onError(err:any, req: express.Request, res: any, next:any) {
     // The error id is attached to `res.sentry` to be returned
     // and optionally displayed to the user for support.
     res.statusCode = 500;
-    res.end(res.sentry+'\n');
+    res.end(err + '\nSentry error id: ' + res.sentry+'\n');
 }
 
 // The error handler must be before any other error middleware

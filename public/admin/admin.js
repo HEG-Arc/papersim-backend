@@ -63,8 +63,8 @@
                     });
                 } else {
                     db = obj;
-                    this.DBS.push(db);
-                    this.DBS = this.DBS.sort((a, b) => {
+                    self.DBS.push(db);
+                    self.DBS = self.DBS.sort((a, b) => {
                         return a.name.localeCompare(b.name);
                     });
                 }

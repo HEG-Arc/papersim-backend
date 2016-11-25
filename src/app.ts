@@ -129,7 +129,7 @@ function requireAdmin(req: express.Request, res: express.Response, next: express
     if (req.isAuthenticated()) {
       next();
     } else {
-      (<any> req.session).returnTo = req.url;
+      (<any> req.session).returnTo = req.originalUrl;
       res.redirect(`https://marmix.ig.he-arc.ch/shibjwt/?reply_to=${process.env.HOST_URL || 'http://localhost'}/token`);
     }
 }

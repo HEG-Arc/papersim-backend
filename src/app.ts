@@ -78,10 +78,9 @@ redisMailSubClient.on("pmessage", (pattern: any, event: any, value: any) => {
             odooAdapter.createUser('VPSales', defaultPassword).then(() => {
               odooAdapter.inspect().then((result) => {
                 updateDB(db, 'inspect', JSON.stringify(result));
+                odooAdapter.updateNames();
               });
             });
-            // TODO error if no warehouse...
-            odooAdapter.updateNames();
           });
       });
     }

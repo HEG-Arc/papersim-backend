@@ -24,6 +24,7 @@
         data: {
             prefix: 'edu-paper-a',
             pattern: '01',
+            postfix: '',
             count: 1,
             newDBS: [],
             DBS: [],
@@ -72,7 +73,7 @@
                 prepareItem(db)
             },
             generate: function () {
-                this.newDBS = generate(this.prefix, this.pattern, this.count);
+                this.newDBS = generate(this.prefix, this.pattern, this.postfix, this.count);
                 /* todo check  with existing dbs? */
             },
             post: function (event) {

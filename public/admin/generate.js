@@ -23,7 +23,9 @@
     }
 
 
-    function generate(prefix, code, count) {
+    function generate(prefix, code, postfix, count) {
+        prefix = prefix || '';
+        postfix = postfix || '';
         code = code.split('');
         count = parseInt(count);
         let i = 0;
@@ -44,7 +46,7 @@
 
         const results = [];
         while (i < count) {
-            let name = prefix + code.join('');
+            let name = prefix + code.join('') + postfix;
             results.push(name.toLowerCase());
             try{
                 increment();

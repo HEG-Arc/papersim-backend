@@ -5,6 +5,7 @@
   "scripts": {
     "serve": "node dist/app.js",
     "build": "tsc -p .",
+    "docker-base": "docker build -f docker/Base.Dockerfile -t bfritscher/papersim-backend-base --no-cache=true .",
     "docker": "docker build -t bfritscher/papersim-backend --no-cache=true ."
   },
   "author": "",

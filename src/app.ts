@@ -143,7 +143,7 @@ app.get('/mail/*', function(req, res) {
 });
 
 /* Web Push*/
-const vapidKeysFilename = 'vapidKeys.json';
+const vapidKeysFilename = 'data/vapidKeys.json';
 let vapidKeys:any;
 try {
   vapidKeys = JSON.parse(fs.readFileSync(vapidKeysFilename, 'utf-8'));
@@ -157,7 +157,7 @@ webpush.setVapidDetails(
   vapidKeys.privateKey
 );
 
-const subscriptionsFilename = 'subscriptions.json';
+const subscriptionsFilename = 'data/subscriptions.json';
 let subscriptions:any;
 try {
   subscriptions = JSON.parse(fs.readFileSync(subscriptionsFilename, 'utf-8'));

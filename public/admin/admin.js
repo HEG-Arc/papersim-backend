@@ -59,10 +59,11 @@
                 let db = find(obj.name);
                 if (db) {
                     Object.keys(obj).forEach((key) => {
-                        db[key] = obj[key];
+                        Vue.set(db, key, obj[key]);
                     });
                 } else {
                     db = obj;
+                    db.showDetail = true;
                     self.DBS.push(db);
                     self.DBS = self.DBS.sort((a, b) => {
                         return a.name.localeCompare(b.name);

@@ -12,16 +12,26 @@
             font-weight: bold;
         }
 
-        .mail-select {
+        .list-item {
             padding: 10px 0;
             cursor: pointer;
+            transition: all 1s;
         }
 
-        .mail-select:nth-child(even) {
+        .list-enter, .list-leave-active {
+            opacity: 0;
+            background-color: #fff;
+        }
+
+        .list-leave-active {
+            height: 0;
+        }
+
+        .list-item:nth-child(even) {
             background-color: #f3e5f5;
         }
 
-        .mail-select:hover {
+        .list-item:hover {
             background-color: #c8e6c9;
         }
 
@@ -121,7 +131,8 @@
                     <div class="col-md-2">Date</div>
                     <div class="col-md-3">Actions</div>
                 </div>
-                <div v-if="!filter || (item.name.indexOf(filter) > -1 || item.state.indexOf(filter) > -1)" v-for="(item, index) in DBS" track-by="item.name" class="mail-select">
+                <transition-group name="list" tag="div">
+                <div v-bind:key="item.name" v-if="!filter || (item.name.indexOf(filter) > -1 || item.state.indexOf(filter) > -1)" v-for="(item, index) in DBS" track-by="item.name" class="list-item">
                     <div class="row" v-if="item.state != 'renamed'">
                         <div class="col-md-3">
                             <p>
@@ -156,6 +167,7 @@
                         </div>
                     </div>
                 </div>
+                </transition-group>
             </div>
         </div>
     </div>

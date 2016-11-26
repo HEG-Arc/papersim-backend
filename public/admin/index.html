@@ -8,6 +8,32 @@
     <title>OdooSIM Admin</title>
     <link rel="stylesheet" href="https://bootswatch.com/paper/bootstrap.min.css">
     <style>
+        [v-cloak] {
+        display: none;
+        }
+        .jumbotron{
+            position: relative;
+            transition: all 0.3s;
+        }
+        #create {
+            position: fixed;
+            bottom: 20px;
+            right: 30px;
+            border-radius: 100%;
+            display: block;
+            width: 50px;
+            height: 50px;
+            font-size: 30px;
+            line-height: 20px;
+        }
+        #close {
+            position: absolute;
+            top: -4px;
+            right: 4px;
+            color: #9E9E9E;
+            text-decoration: none;
+            font-size: 1.6em;
+        }
         .mail-select-header {
             font-weight: bold;
         }
@@ -89,9 +115,12 @@
 
 <body>
     <div class="container" id="app">
+        <button class="btn btn-primary" id="create" v-if="!showCreate" v-on:click="showCreate=true">+</button>
         <div class="row">
             <div class="col-md-12">
-                <div class="jumbotron">
+                <transition  name="list">
+                <div class="jumbotron" v-if="showCreate" v-cloak>
+                    <a id="close" href="" v-on:click.prevent="showCreate=false">x</a>
                     <p>Create Instance</p>
                     <form v-on:submit.prevent="generate()" class="form-inline">
                         <div class="form-group">
@@ -118,6 +147,7 @@
                     <button class="btn btn-primary" v-if="newDBS.length > 0" v-on:click="post()">Create</button>
 
                 </div>
+                </transition>
             </div>
         </div>
         <div class="row">
@@ -136,7 +166,7 @@
                     <div class="col-md-3">Actions</div>
                 </div>
                 <transition-group name="list" tag="div">
-                <div v-bind:key="item.name" v-if="!filter || (item.name.indexOf(filter) > -1 || item.state.indexOf(filter) > -1)" v-for="(item, index) in DBS" track-by="item.name" class="list-item">
+                <div v-cloak v-bind:key="item.name" v-if="!filter || (item.name.indexOf(filter) > -1 || item.state.indexOf(filter) > -1)" v-for="(item, index) in DBS" track-by="item.name" class="list-item">
                     <div class="row" v-if="item.state != 'renamed'">
                         <div class="col-md-3">
                             <p>

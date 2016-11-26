@@ -28,7 +28,8 @@
             count: 1,
             newDBS: [],
             DBS: [],
-            filter: ''
+            filter: '',
+            showCreate: false
         },
         created: function () {
             let self = this;

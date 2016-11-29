@@ -33,7 +33,7 @@
                     <div class="panel-body">
                         <p>
                             <div class="input-group">
-                                <input type="text" class="form-control"  v-model="company"  placeholder="company" v-bind:disabled="isChecking">
+                                <input type="text" class="form-control"  v-model="company"  placeholder="edu-paper-" v-bind:disabled="isChecking">
                                 <span class="input-group-btn">
                                     <button v-if="!isAdddata" class="btn btn-primary" v-on:click="check()" type="button" v-bind:disabled="isChecking">Vérifier!</button>
                                     <button v-if="isAdddata" class="btn btn-danger" v-on:click="addData()" type="button" v-bind:disabled="isChecking">Ajouter données!</button>

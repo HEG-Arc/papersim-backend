@@ -10,7 +10,7 @@
             result: false,
             isChecking: false,
             progress: 0,
-            company: localStorage.getItem(odooDBnameKey) || 'test',
+            company: localStorage.getItem(odooDBnameKey) || '',
             isAdddata: window.location.search.slice(1) === 'adddata'
         },
         methods: {

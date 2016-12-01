@@ -31,6 +31,24 @@
             border: 0;
         }
     </style>
+    <script>
+    window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+    ga('create', 'UA-55173430-5', 'auto');
+    var id = localStorage.getItem('odooDBname');
+    if(id) {
+        ga('set', 'userId', id);
+    }
+    ga('require', 'urlChangeTracker', {
+        fieldsObj: {
+            dimension1: 'virtual'
+        }
+    });
+    ga('send', 'pageview', {
+        dimension1: 'pageload'
+    });
+    </script>
+    <script async src='https://www.google-analytics.com/analytics.js'></script>
+    <script async src='https://odoosim.ch/lib/autotrack.js'></script>
 </head>
 
 <body>

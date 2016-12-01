@@ -135,7 +135,7 @@
                 return moment(date).fromNow();
             },
             date: function (date) {
-                return moment(date).format('YYYY-MM-DD, hh:mm:ss');
+                return moment(date).format('YYYY-MM-DD, HH:mm:ss');
             },
             countValid: function (l) {
                 if (!l) {

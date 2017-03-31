@@ -48,6 +48,31 @@ const redisMailSubClient = redis.createClient(6379, 'redis_mail');
 const redisAdminClient = redis.createClient(6379, 'redis_mail');
 redisAdminClient.select(1);
 
+
+function activateDbAndAddUsers(db: string) {
+  // get E-mail data or ignore
+  redisAdminClient.hmget(db, 'activationURL', 'activationEmail', (err: any, res: any) => {
+    if (err) {
+      console.log('[activation]', err);
+      return;
+    }
+    const url = res[0];
+    const to = res[1];
+    activateDB(url, defaultPassword).then((db) => {
+      updateDBState(db, 'activated', 'email', to, 'password', defaultPassword);
+        prepareAdapterForDB(db).then((odooAdapter) => {
+          /* todo promise */
+          odooAdapter.createUser('VPSales', defaultPassword).then(() => {
+            odooAdapter.inspect().then((result) => {
+              updateDB(db, 'inspect', JSON.stringify(result));
+              odooAdapter.updateNames();
+            });
+          });
+        });
+    });
+  });
+}
+
 redisAdminClient.on("error", function (err: any) {
   console.log("RedisAdminClientError " + err);
 });
@@ -70,18 +95,15 @@ redisMailSubClient.on("pmessage", (pattern: any, event: any, value: any) => {
       /* TODO error handling */
       const url = extrateActivationUrlFromMail(mail.text);
       const dbName = activationUrl2DB(url);
-      updateDBState(dbName, 'email');
-      activateDB(url, defaultPassword).then((db) => {
-        updateDBState(db, 'activated', 'email', mail.to, 'password', defaultPassword);
-         prepareAdapterForDB(db).then((odooAdapter) => {
-            /* todo promise */
-            odooAdapter.createUser('VPSales', defaultPassword).then(() => {
-              odooAdapter.inspect().then((result) => {
-                updateDB(db, 'inspect', JSON.stringify(result));
-                odooAdapter.updateNames();
-              });
-            });
-          });
+      updateDB(dbName, 'activationURL', url, 'activationEmail', mail.to);
+      // if db already created activate
+      redisAdminClient.hmget(dbName, 'state', (err: any, res: any) => {
+        if (err) {
+          console.log('[email direct activation]', err);
+        }
+        if (res[0] === 'created') {
+          activateDbAndAddUsers(dbName);
+        }
       });
     }
   });
@@ -430,6 +452,7 @@ app.post('/api/admin/create', requireAdmin, jsonParser, (req: express.Request, r
         redisAdminClient.sadd(DB_KEY, db);
         updateDBState(name, 'renamed', 'to', db);
       }
+      activateDbAndAddUsers(db);
     });
 
   });

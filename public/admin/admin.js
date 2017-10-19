@@ -99,7 +99,9 @@
                     .then(function (response) {
                         return response.json();
                     }).then(function (json) {
-                        self.DBS = json.map(prepareItem).sort((a, b) => {
+                        self.DBS = json.map(prepareItem).filter((i) => {
+                            return new Date() - i.date < 1000 * 3600 * 24 * 30 * 3;
+                        }).sort((a, b) => {
                             return a.name.localeCompare(b.name);
                         });
                     }).catch(function (ex) {

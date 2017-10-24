@@ -22,7 +22,7 @@ function objectToDomain(obj: Object) {
 
 function simDayToDateTime(day:number):string {
      day = Math.max(day, 0);
-     return '2016-11-' + ('00' + (day + 1)).slice(-2) + ' 00:00:00';
+     return new Date().getFullYear() + '-11-' + ('00' + (day + 1)).slice(-2) + ' 00:00:00';
 }
 
 function zeroPadding(number: number): string {

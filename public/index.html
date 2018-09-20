@@ -1,38 +1,250 @@
 <!DOCTYPE html>
 <html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>OdooSIM</title>
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+
+    <link href="https://fonts.googleapis.com/css?family=Crimson+Text:400,400i,600|Montserrat:200,300,400" rel="stylesheet">
+
+		<link rel="stylesheet" href="assets/css/bootstrap/bootstrap.css">
+    <link rel="stylesheet" href="assets/fonts/ionicons/css/ionicons.min.css">
+    <link rel="stylesheet" href="assets/fonts/law-icons/font/flaticon.css">
+
+    <link rel="stylesheet" href="assets/fonts/fontawesome/css/font-awesome.min.css">
+
+
+    <link rel="stylesheet" href="assets/css/slick.css">
+    <link rel="stylesheet" href="assets/css/slick-theme.css">
+
+    <link rel="stylesheet" href="assets/css/helpers.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/landing-2.css">
     <link rel="icon" type="image/png" href="/favicon.png">
-    <title>OdooSIM Check</title>
-    <link rel="stylesheet" href="https://odoosim.ch/lib/bootstrap.min.css">
     <script>
-    window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-    ga('create', 'UA-55173430-5', 'auto');
-    var id = localStorage.getItem('odooDBname');
-    if(id) {
-        ga('set', 'userId', id);
-    }
-    ga('require', 'urlChangeTracker', {
-        fieldsObj: {
-            dimension1: 'virtual'
+        window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+        ga('create', 'UA-55173430-5', 'auto');
+        var id = localStorage.getItem('odooDBname');
+        if(id) {
+            ga('set', 'userId', id);
         }
-    });
-    ga('send', 'pageview', {
-        dimension1: 'pageload'
-    });
-    </script>
-    <script async src='https://www.google-analytics.com/analytics.js'></script>
-    <script async src='https://odoosim.ch/lib/autotrack.js'></script>
-</head>
+        ga('require', 'urlChangeTracker', {
+            fieldsObj: {
+                dimension1: 'virtual'
+            }
+        });
+        ga('send', 'pageview', {
+            dimension1: 'pageload'
+        });
+        </script>
+        <script async src='https://www.google-analytics.com/analytics.js'></script>
+        <script async src='https://odoosim.ch/lib/autotrack.js'></script>
+	</head>
+	<body data-spy="scroll" data-target="#pb-navbar" data-offset="200">
 
-<body>
-    <div class="container" id="app">
-        <div class="text-center">
-            <h1 style="font-size:6em;padding-top:2em;"><span style="color:#75526b">Odoo</span><span style="color:#26D1AF">SIM</span></h1>
-
+    <nav class="navbar navbar-expand-lg navbar-dark pb_navbar pb_scrolled-light" id="pb-navbar">
+      <div class="container">
+        <a class="navbar-brand" href="index.html">OdooSIM</a>
+        <button class="navbar-toggler ml-auto" type="button" data-toggle="collapse" data-target="#probootstrap-navbar" aria-controls="probootstrap-navbar" aria-expanded="false" aria-label="Toggle navigation">
+          <span><i class="ion-navicon"></i></span>
+        </button>
+        <div class="collapse navbar-collapse" id="probootstrap-navbar">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item"><a class="nav-link" href="#section-home">Home</a></li>
+            <li class="nav-item"><a class="nav-link" href="#section-features">Features</a></li>
+            <li class="nav-item"><a class="nav-link" href="#section-faq">FAQ</a></li>
+            <li class="nav-item cta-btn ml-xl-2 ml-lg-2 ml-md-0 ml-sm-0 ml-0"><a class="nav-link" href="#section-signup"><span class="pb_rounded-4 px-4">Sign-up for Beta</span></a></li>
+          </ul>
         </div>
-    </div>
-</body>
+      </div>
+    </nav>
+    <!-- END nav -->
+
+
+
+
+    <section class="pb_cover_v3 overflow-hidden cover-bg-indigo cover-bg-opacity text-left pb_gradient_v1 pb_slant-light" id="section-home">
+      <div class="container">
+        <div class="row align-items-center justify-content-center">
+          <div class="col-md-6">
+            <h2 class="heading mb-3">Learning by Doing</h2>
+            <div class="sub-heading">
+              <p class="mb-4">Serious Games for Odoo Training</p>
+            </div>
+          </div>
+          <div class="col-md-1">
+          </div>
+          <div class="col-md-5 relative align-self-center">
+
+            <form action="#" class="bg-white rounded pb_form_v1">
+              <h2 class="mb-4 mt-0 text-center">Sign Up for Beta</h2>
+              <p class="mb-5"><a class="btn btn-primary btn-lg btn-block pb_btn-pill smoothscroll btn-shadow-blue" href="#section-signup">Register</a></p>
+            </form>
+
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- END section -->
+
+    <section class="bg-light pb_slant-white pb_pb-100" id="section-features">
+      <div class="container">
+        <div class="row justify-content-center mb-5">
+          <div class="col-md text-center mb-5">
+            <h5 class="text-uppercase pb_font-15 mb-2 pb_color-dark-opacity-3 pb_letter-spacing-2"><strong>Features</strong></h5>
+            <h2>Context</h2>
+            <p>After years of training people to use Odoo with slides, videos or webinars, it’s time to let them play with Odoo!</p>
+            <p>Each year new features are improving Odoo, new employees are hired, digitization is expanding to all sectors and companies are faced with the need to (re)train their users. What if users were able to play with Odoo to learn to use new apps, to perform specific tasks or to discover the new functions? This is the promise of OdooSim, a simulation game designed to train users in a real life scenario where customers are placing orders and employees need to manage inventory, production and pricing by using the relevant Odoo modules.</p>
+            <p>This is done and managed within Odoo, providing a real world experience to the learner. As for the teacher, he can use all the reporting features of Odoo to analyze the performance of the simulated companies.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="pb_section pb_slant-light">
+      <div class="container">
+          <div class="row justify-content-center mb-5">
+              <div class="col-md text-center mb-5">
+                <h5 class="text-uppercase pb_font-15 mb-2 pb_color-dark-opacity-3 pb_letter-spacing-2"><strong>Features</strong></h5>
+                <h2>OdooSIM Features</h2>
+              </div>
+            </div>
+        <div class="row">
+            <div class="col-lg-4 col-md- col-sm-6">
+                <div class="media d-block pb_feature-v1 text-left">
+                  <div class="pb_icon"><i class="ion-ios-color-filter-outline pb_icon-gradient"></i></div>
+                  <div class="media-body">
+                    <h5 class="mt-0 mb-3 heading">Component Based</h5>
+                    <p class="text-sans-serif">Simulator can be tailored to train specific Odoo Apps.</p>
+                  </div>
+                </div>
+              </div>
+          <div class="col-lg-4 col-md- col-sm-6">
+            <div class="media d-block pb_feature-v1 text-left">
+              <div class="pb_icon"><i class="ion-ios-speedometer-outline pb_icon-gradient"></i></div>
+              <div class="media-body">
+                <h5 class="mt-0 mb-3 heading">Fast Training</h5>
+                <p class="text-sans-serif">Trainee use the real system! No slides, videos or fake applications.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-4 col-md- col-sm-6">
+            <div class="media d-block pb_feature-v1 text-left">
+              <div class="pb_icon"><i class="ion-ios-infinite-outline pb_icon-gradient"></i></div>
+              <div class="media-body">
+                <h5 class="mt-0 mb-3 heading">Unlimited Possibilities</h5>
+                <p class="text-sans-serif">Real Simulation. Each run can be as different or same as the actions you take.</p>
+              </div>
+            </div>
+          </div>
+    </section>
+    <!-- END section -->
+
+
+    <section class="pb_section bg-light pb_slant-white" id="section-signup">
+      <div class="container">
+        <div class="row justify-content-center mb-5">
+          <div class="col-md text-center">
+            <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSd2xWVNxmzo31B9hFKvmlSqdv7EJCh3NoT_0SDXm3c4Bi58Tg/viewform?embedded=true"
+ width="640" height="950" frameborder="0" marginheight="0" marginwidth="0">Loading...</iframe>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ENDs ection -->
+
+    <section class="pb_section pb_slant-white" id="section-faq">
+      <div class="container">
+        <div class="row justify-content-center mb-5">
+          <div class="col-md-6 text-center mb-5">
+            <h5 class="text-uppercase pb_font-15 mb-2 pb_color-dark-opacity-3 pb_letter-spacing-2"><strong>FAQ</strong></h5>
+            <h2>Frequently Ask Questions</h2>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md">
+            <div id="pb_faq" class="pb_accordion" data-children=".item">
+              <div class="item">
+                <a data-toggle="collapse" data-parent="#pb_faq" href="#pb_faq1" aria-expanded="true" aria-controls="pb_faq1" class="pb_font-22 py-4">When is it released?</a>
+                <div id="pb_faq1" class="collapse show" role="tabpanel">
+                  <div class="py-3">
+                  <p>Pityful a rethoric question ran over her cheek, then she continued her way.</p>
+                  <p>Far far away, behind the word mountains, far from the countries Vokalia and Consonantia, there live the blind texts. Separated they live in Bookmarksgrove right at the coast of the Semantics, a large language ocean.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="item">
+                <a data-toggle="collapse" data-parent="#pb_faq" href="#pb_faq2" aria-expanded="false" aria-controls="pb_faq2" class="pb_font-22 py-4">Is this available to my country?</a>
+                <div id="pb_faq2" class="collapse" role="tabpanel">
+                  <div class="py-3">
+                    <p>A small river named Duden flows by their place and supplies it with the necessary regelialia. It is a paradisematic country, in which roasted parts of sentences fly into your mouth.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="item">
+                <a data-toggle="collapse" data-parent="#pb_faq" href="#pb_faq4" aria-expanded="false" aria-controls="pb_faq4" class="pb_font-22 py-4">How much does OdooSIM cost?</a>
+                <div id="pb_faq4" class="collapse" role="tabpanel">
+                  <div class="py-3">
+                    <p>The Big Oxmox advised her not to do so, because there were thousands of bad Commas, wild Question Marks and devious Semikoli, but the Little Blind Text didn’t listen. She packed her seven versalia, put her initial into the belt and made herself on the way.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="item">
+                <a data-toggle="collapse" data-parent="#pb_faq" href="#pb_faq5" aria-expanded="false" aria-controls="pb_faq5" class="pb_font-22 py-4">I have other questions, who do I email?</a>
+                <div id="pb_faq5" class="collapse" role="tabpanel">
+                  <div class="py-3">
+                    <p>On her way she met a copy. The copy warned the Little Blind Text, that where it came from it would have been rewritten a thousand times and everything that was left from its origin would be the word "and" and the Little Blind Text should turn around and return to its own, safe country. </p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- END section -->
+
+    <footer class="pb_footer bg-light" role="contentinfo">
+      <div class="container">
+        <div class="row text-center">
+          <div class="col">
+            <ul class="list-inline">
+              <li class="list-inline-item"><a href="#" class="p-2"><i class="fa fa-facebook"></i></a></li>
+              <li class="list-inline-item"><a href="#" class="p-2"><i class="fa fa-twitter"></i></a></li>
+              <li class="list-inline-item"><a href="#" class="p-2"><i class="fa fa-linkedin"></i></a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col text-center">
+            <p class="pb_font-14">&copy; 2018 <a href="https://www.camptocamp.com/en/">Camptocamp SA</a> <br>Free Bootstrap4 Template Designed &amp; Developed by <a href="https://uicookies.com/">uicookies.com</a> <small>(Don't remove credit link on this footer. See <a href="https://uicookies.com/license/" target="_blank">license</a>)</small></p>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- loader -->
+    <div id="pb_loader" class="show fullscreen"><svg class="circular" width="48px" height="48px"><circle class="path-bg" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke="#eeeeee"/><circle class="path" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke-miterlimit="10" stroke="#1d82ff"/></svg></div>
+
+
+
+    <script src="assets/js/jquery.min.js"></script>
+
+    <script src="assets/js/popper.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
+    <script src="assets/js/slick.min.js"></script>
+    <script src="assets/js/jquery.mb.YTPlayer.min.js"></script>
+
+    <script src="assets/js/jquery.waypoints.min.js"></script>
+    <script src="assets/js/jquery.easing.1.3.js"></script>
+
+    <script src="assets/js/main.js"></script>
+
+	</body>
 </html>

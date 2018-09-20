@@ -10,3 +10,7 @@ SESSION_SECRET
 JWT_SECRET
 ADMINS
 HOST_URL
+
+# prod
+   docker build --tag bfritscher/papersim-backend .
+   docker push bfritscher/papersim-backend

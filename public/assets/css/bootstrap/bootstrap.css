@@ -155,12 +155,12 @@ sup {
   top: -.5em; }
 
 a {
-  color: #1d82ff;
+  color: #ff680a;
   text-decoration: none;
   background-color: transparent;
   -webkit-text-decoration-skip: objects; }
   a:hover {
-    color: #005dd0;
+    color: #ff4400;
     text-decoration: none; }
 
 a:not([href]):not([tabindex]) {
@@ -1520,7 +1520,7 @@ pre {
   .form-control:focus {
     color: #495057;
     background-color: #fff;
-    border-color: #1d82ff;
+    border-color: #ff680a;
     outline: none; }
   .form-control::-webkit-input-placeholder {
     color: #868e96;
@@ -1890,23 +1890,23 @@ fieldset[disabled] a.btn {
 
 .btn-primary {
   color: #fff;
-  background-color: #1d82ff;
-  border-color: #1d82ff; }
+  background-color: #ff680a;
+  border-color: #ff680a; }
   .btn-primary:hover {
     color: #fff;
-    background-color: #006ef6;
-    border-color: #0068e9; }
+    background-color: #ff5900;
+    border-color: #ff5900; }
   .btn-primary:focus, .btn-primary.focus {
     -webkit-box-shadow: 0 0 0 3px rgba(29, 130, 255, 0.5);
     box-shadow: 0 0 0 3px rgba(29, 130, 255, 0.5); }
   .btn-primary.disabled, .btn-primary:disabled {
-    background-color: #1d82ff;
-    border-color: #1d82ff; }
+    background-color: #ff680a;
+    border-color: #ff680a; }
   .btn-primary:active, .btn-primary.active,
   .show > .btn-primary.dropdown-toggle {
-    background-color: #006ef6;
+    background-color: #ff5900;
     background-image: none;
-    border-color: #0068e9; }
+    border-color: #ff5900; }
 
 .btn-secondary {
   color: #fff;
@@ -2069,25 +2069,25 @@ fieldset[disabled] a.btn {
     border-color: #011061; }
 
 .btn-outline-primary {
-  color: #1d82ff;
+  color: #ff680a;
   background-color: transparent;
   background-image: none;
-  border-color: #1d82ff; }
+  border-color: #ff680a; }
   .btn-outline-primary:hover {
     color: #fff;
-    background-color: #1d82ff;
-    border-color: #1d82ff; }
+    background-color: #ff680a;
+    border-color: #ff680a; }
   .btn-outline-primary:focus, .btn-outline-primary.focus {
     -webkit-box-shadow: 0 0 0 3px rgba(29, 130, 255, 0.5);
     box-shadow: 0 0 0 3px rgba(29, 130, 255, 0.5); }
   .btn-outline-primary.disabled, .btn-outline-primary:disabled {
-    color: #1d82ff;
+    color: #ff680a;
     background-color: transparent; }
   .btn-outline-primary:active, .btn-outline-primary.active,
   .show > .btn-outline-primary.dropdown-toggle {
     color: #fff;
-    background-color: #1d82ff;
-    border-color: #1d82ff; }
+    background-color: #ff680a;
+    border-color: #ff680a; }
 
 .btn-outline-secondary {
   color: #868e96;
@@ -2259,7 +2259,7 @@ fieldset[disabled] a.btn {
 
 .btn-link {
   font-weight: 300;
-  color: #1d82ff;
+  color: #ff680a;
   border-radius: 0; }
   .btn-link, .btn-link:active, .btn-link.active, .btn-link:disabled {
     background-color: transparent; }
@@ -2270,7 +2270,7 @@ fieldset[disabled] a.btn {
   .btn-link:hover {
     border-color: transparent; }
   .btn-link:focus, .btn-link:hover {
-    color: #005dd0;
+    color: #ff4400;
     text-decoration: none;
     background-color: transparent; }
   .btn-link:disabled {
@@ -3608,7 +3608,7 @@ tbody.collapse.show {
 
 .badge-primary {
   color: #fff;
-  background-color: #1d82ff; }
+  background-color: #ff680a; }
   .badge-primary[href]:focus, .badge-primary[href]:hover {
     color: #fff;
     text-decoration: none;
@@ -4629,7 +4629,7 @@ button.close {
   vertical-align: text-top !important; }
 
 .bg-primary {
-  background-color: #1d82ff !important; }
+  background-color: #ff680a !important; }
 
 a.bg-primary:focus, a.bg-primary:hover {
   background-color: #0068e9 !important; }
@@ -4707,7 +4707,7 @@ a.bg-navy:focus, a.bg-navy:hover {
   border-left: 0 !important; }
 
 .border-primary {
-  border-color: #1d82ff !important; }
+  border-color: #ff680a !important; }
 
 .border-secondary {
   border-color: #868e96 !important; }
@@ -6978,7 +6978,7 @@ a.bg-navy:focus, a.bg-navy:hover {
   color: #fff !important; }
 
 .text-primary {
-  color: #1d82ff !important; }
+  color: #ff680a !important; }
 
 a.text-primary:focus, a.text-primary:hover {
   color: #0068e9 !important; }

@@ -93,18 +93,25 @@ redisMailSubClient.on("pmessage", (pattern: any, event: any, value: any) => {
 
     if (mail.subject.indexOf('Activate') > -1 && mail.subject.indexOf('odoo.com') > -1) {
       /* TODO error handling */
+      console.log('Odoo mail detected!');
       const url = extrateActivationUrlFromMail(mail.text);
       const dbName = activationUrl2DB(url);
+      console.log(dbName, url);
       updateDB(dbName, 'activationURL', url, 'activationEmail', mail.to);
+
+      // always activate DB
+      activateDbAndAddUsers(dbName);
+      /*
       // if db already created activate
       redisAdminClient.hmget(dbName, 'state', (err: any, res: any) => {
         if (err) {
           console.log('[email direct activation]', err);
         }
         if (res[0] === 'created') {
-          activateDbAndAddUsers(dbName);
+
         }
       });
+      */
     }
   });
 });
@@ -453,6 +460,8 @@ app.post('/api/admin/create', requireAdmin, jsonParser, (req: express.Request, r
         updateDBState(name, 'renamed', 'to', db);
       }
       activateDbAndAddUsers(db);
+    }, () => {
+      updateDBState(name, 'failed');
     });
 
   });
@@ -464,6 +473,11 @@ app.get('/api/admin/test/create', requireAdmin, (req: express.Request, res: expr
   redisAdminClient.sadd(DB_KEY, name);
   const email = `edu-paper@mailinator.com`;
   updateDBState(name, 'activated', 'email', email, 'password', defaultPassword);
+  res.end();
+});
+
+app.get('/api/admin/activate/:dbname', requireAdmin, (req: express.Request, res: express.Response) => {
+  activateDbAndAddUsers(req.params.dbname);
   res.end();
 });
 

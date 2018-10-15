@@ -12,13 +12,14 @@ function urlToDB(url: string) {
 export function createDB(name: string, email: string): Promise<string> {
     return new Promise((resolve: (value: any) => void, reject: (value: any) => void) => {
         const horseman = new Horseman({
-            timeout: 5 * 60 * 1000
+            timeout: 60 * 60 * 1000
         });
         horseman
         .userAgent('Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0')
-        .open('http://www.odoo.com/fr_FR/trial')
+        .open('https://www.odoo.com/fr_FR/trial')
+        .wait(1000)
         .click('[data-app="account"]')
-        .wait(5000)
+        .wait(6000)
         .type('[name="username"]', 'Admin')
         .type('[name="email"]', email)
         .type('[name="company_name"]', name)
@@ -34,7 +35,11 @@ export function createDB(name: string, email: string): Promise<string> {
             resolve(db);
             console.log('created:', db); //https://edu-paper-test.odoo.com/web#home
         })
-        .close();
+        .close()
+        .catch((e:any) => {
+            console.log("signup error", e)
+            reject(e);
+        })
     });
 }
 
@@ -70,6 +75,13 @@ export function activateDB( url: string, password: string ): Promise<string> {
                     submit.click();
                 }, password)
                 .waitForNextPage()
+                .evaluate( function () {
+                    (<HTMLInputElement> document.querySelector('.btn.btn-default.o_db_activation_skip')).click();
+                })
+                .waitForNextPage()
+                .evaluate( function () {
+                    (<HTMLInputElement> document.querySelector('.o_db_activation_actions .btn.btn-primary')).click();
+                })
                 .url()
                 .then( (url: string) => {
                     const db = urlToDB(url)

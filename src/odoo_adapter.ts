@@ -1049,7 +1049,7 @@ export class OdooAdapter {
                 let res = await this.execute((resolve, reject) => {
                     this.odoo.rpc_call('/web/dataset/call_button', {
                         model: 'stock.picking',
-                        method: 'do_new_transfer',
+                        method: 'button_validate',
                         args: [[pickingId]]
                     }, this.createDefaultResponseHandler(resolve, reject));
                 });
@@ -1396,7 +1396,7 @@ export class OdooAdapter {
 			    product_qty: quantityProduced,
 			    product_tracking: 'none',
 			    lot_id: false,
-			    consume_line_ids: []
+			    produce_line_ids: []
             }, this.createDefaultResponseHandler(resolve, reject));
         });
         delete this.odoo.context.active_model;

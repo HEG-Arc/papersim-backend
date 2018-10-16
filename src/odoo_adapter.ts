@@ -746,7 +746,7 @@ export class OdooAdapter {
 
     async checkUoM(uom: any): Promise<any> {
         return this.execute((resolve: Function, reject: Function) => {
-            this.odoo.search('product.uom', {
+            this.odoo.search('uom.uom', {
                 domain: objectToDomain(uom)
             }, this.createCacheResponseHandler(uom, resolve, reject));
         });
@@ -754,7 +754,7 @@ export class OdooAdapter {
 
     async createUoM(uom: any): Promise<any> {
         return this.execute((resolve: Function, reject: Function) => {
-            this.odoo.create('product.uom', uom, this.createCacheResponseHandler(uom, resolve, reject));
+            this.odoo.create('uom.uom', uom, this.createCacheResponseHandler(uom, resolve, reject));
         });
     }
 

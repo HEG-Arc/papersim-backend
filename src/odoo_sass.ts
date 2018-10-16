@@ -1,101 +1,123 @@
-const Horseman = require('node-horseman');
+const puppeteer = require("puppeteer");
 
 const regexDB = /\/\/(.*?)\.odoo\.com/;
 const regexUrl = /(https:\/\/accounts.odoo.com.* )/m;
 const regexActivate = /confirm-database\/(.*?)\/(.*?)\?/;
+const timeout = 5 * 60 * 1000;
 
 function urlToDB(url: string) {
-    const matchDB = regexDB.exec(url);
-    return matchDB[1]
+  const matchDB = regexDB.exec(url);
+  return matchDB[1];
 }
 
 export function createDB(name: string, email: string): Promise<string> {
-    return new Promise((resolve: (value: any) => void, reject: (value: any) => void) => {
-        const horseman = new Horseman({
-            timeout: 60 * 60 * 1000
+  return new Promise(
+    (resolve: (value: any) => void, reject: (value: any) => void) => {
+      (async () => {
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox']
         });
-        horseman
-        .userAgent('Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0')
-        .open('https://www.odoo.com/fr_FR/trial')
-        .wait(1000)
-        .click('[data-app="account"]')
-        .wait(6000)
-        .type('[name="username"]', 'Admin')
-        .type('[name="email"]', email)
-        .type('[name="company_name"]', name)
-        .select('[name="country_id"]', 41)
-        .select('[name="lang"]', 'fr_FR')
-        .select('[name="company_size"]', '1-5')
-        .select('[name="plan"]', 'plan_to_test')
-        .click('[type="submit"]')
-        .waitForSelector('.demo_subscribe_panel')
-        .url()
-        .then( (url: string) => {
-            const db = urlToDB(url);
-            resolve(db);
-            console.log('created:', db); //https://edu-paper-test.odoo.com/web#home
-        })
-        .close()
-        .catch((e:any) => {
-            console.log("signup error", e)
-            reject(e);
-        })
-    });
+        try {
+          console.log("signup for ", name, "with", email);
+          const page = await browser.newPage();
+          await page.goto("https://www.odoo.com/fr_FR/trial");
+          await page.waitFor(1000);
+          await page.click('[data-app="account"]');
+          await page.waitFor(5000);
+          await page.type('[name="username"]', "Admin");
+          await page.type('[name="email"]', email);
+          await page.type('[name="company_name"]', name);
+          await page.select('[name="country_id"]', "41");
+          await page.select('[name="lang"]', "fr_FR");
+          await page.select('[name="company_size"]', "1-5");
+          await page.select('[name="plan"]', "plan_to_test");
+          await page.click('[type="submit"]');
+          await page.waitForSelector(".demo_subscribe_panel", {
+            timeout
+          });
+          const db = urlToDB(page.url());
+          resolve(db);
+          console.log("created:", db);
+        } catch (e) {
+          console.log("signup error", e);
+          reject(e);
+        }
+        await browser.close();
+      })();
+    }
+  );
 }
 
 export function extrateActivationUrlFromMail(mailText: string): string {
-    const matchUrl = regexUrl.exec(mailText);
-    return matchUrl[1].trim();
+  const matchUrl = regexUrl.exec(mailText);
+  return matchUrl[1].trim();
 }
 
 export function activationUrl2DB(url: string): string {
-    const matchActivate = regexActivate.exec(url);
-    return matchActivate[1];
+  const matchActivate = regexActivate.exec(url);
+  return matchActivate[1];
 }
 
-export function activateDB( url: string, password: string ): Promise<string> {
-    return new Promise((resolve: (value: any) => void, reject: (value: any) => void) => {
-        const horseman = new Horseman({
-            timeout: 5 * 60 * 1000
+export function activateDB(url: string, password: string): Promise<string> {
+  return new Promise(
+    (resolve: (value: any) => void, reject: (value: any) => void) => {
+      (async () => {
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox']
         });
-
-        const chain = horseman
-        .userAgent('Mozilla/5.0 (Windows NT 6.1; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0')
-        .open(url)
-        .url()
-        .then((url: string) => {
-            console.log(url);
-            if (url.indexOf('accounts.odoo.com') > 0) {
-                chain
-                .evaluate( function (password: string) {
-                    (<HTMLInputElement> document.getElementById('password')).value = password;
-                    (<HTMLInputElement> document.getElementById('password-confirmation')).value = password;
-                    var submit = <HTMLInputElement> document.querySelector('[type=submit]');
-                    submit.disabled = false;
-                    submit.click();
-                }, password)
-                .waitForNextPage()
-                .evaluate( function () {
-                    (<HTMLInputElement> document.querySelector('.btn.btn-default.o_db_activation_skip')).click();
-                })
-                .waitForNextPage()
-                .evaluate( function () {
-                    (<HTMLInputElement> document.querySelector('.o_db_activation_actions .btn.btn-primary')).click();
-                })
-                .url()
-                .then( (url: string) => {
-                    const db = urlToDB(url)
-                    console.log('activated with new account:', db); // https://edu-paper-test45.odoo.com/web/login
-                    horseman.close();
-                    resolve(db);
-                })
-            } else {
-                const db = urlToDB(url)
-                console.log('activated with existing account:', db); // https://edu-paper-test45.odoo.com/web/login
-                horseman.close();
-                resolve(db);
-            }
+        const page = await browser.newPage();
+        await page.goto(url);
+        console.log(page.url());
+        // 3 cases new user, existing user, already activated (https://accounts.odoo.com/database_validated)
+        if (page.url() === "https://accounts.odoo.com/database_validated") {
+            return;
+          }
+        await page.type("#password", password);
+        await page.type("#password-confirmation", password);
+        await page.evaluate(() => {
+          var submit = <HTMLInputElement>(
+            document.querySelector("[type=submit]")
+          );
+          submit.disabled = false;
+          submit.click();
         });
-    });
+        try {
+            await page.waitForNavigation();
+            await page.evaluate(() => {
+              const e = <HTMLInputElement>(
+                document.querySelector(".btn.btn-default.o_db_activation_skip")
+              );
+              if (e) {
+                e.click();
+              }
+            });
+            await page.waitFor(1000);
+            await page.evaluate(() => {
+                const e = <HTMLInputElement>(
+                  document.querySelector(".btn.btn-default.o_db_activation_skip")
+                );
+                if (e) {
+                  e.click();
+                }
+              });
+            await page.waitFor(1000);
+            await page.evaluate(() => {
+              const e = <HTMLInputElement>(
+                document.querySelector(".o_db_activation_actions .btn.btn-primary")
+              );
+              if (e) {
+                e.click();
+              }
+            });
+            await page.waitForNavigation();
+        } catch (e) {
+          console.log("activation error", e);
+        }
+        const db = activationUrl2DB(url);
+        console.log("activated with new account:", db);
+        resolve(db);
+        await browser.close();
+      })();
+    }
+  );
 }
-

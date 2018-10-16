@@ -14,3 +14,12 @@ HOST_URL
 # prod
    docker build --tag bfritscher/papersim-backend .
    docker push bfritscher/papersim-backend
+
+# build
+if dependency changed
+  npm run docker-base
+  docker push bfritscher/papersim-backend-base
+
+  npm run build
+  npm run docker
+  docker push bfritscher/papersim-backend

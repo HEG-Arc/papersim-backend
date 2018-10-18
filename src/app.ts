@@ -476,6 +476,63 @@ app.get('/api/admin/test/create', requireAdmin, (req: express.Request, res: expr
   res.end();
 });
 
+app.get('/api/admin/c2c/:email/:password', requireAdmin, (req: express.Request, res: express.Response) => {
+ ['edu-p18-c01a',
+  'edu-p18-c01b',
+  'edu-p18-c02a',
+  'edu-p18-c02b',
+  'edu-p18-c03a',
+  'edu-p18-c03b',
+  'edu-p18-c04a',
+  'edu-p18-c04b',
+  'edu-p18-c05a',
+  'edu-p18-c05b',
+  'edu-p18-c06a',
+  'edu-p18-c06b',
+  'edu-p18-d01a',
+  'edu-p18-d01b',
+  'edu-p18-d02a',
+  'edu-p18-d02b',
+  'edu-p18-d03a',
+  'edu-p18-d03b',
+  'edu-p18-d04a',
+  'edu-p18-d04b',
+  'edu-p18-d05a',
+  'edu-p18-d05b',
+  'edu-p18-d06a',
+  'edu-p18-d06b',
+  'edu-p18-f01a',
+  'edu-p18-f01b',
+  'edu-p18-f02a',
+  'edu-p18-f02b',
+  'edu-p18-f03a',
+  'edu-p18-f03b',
+  'edu-p18-f04a',
+  'edu-p18-f04b',
+  'edu-p18-f05a',
+  'edu-p18-f05b',
+  'edu-p18-r01a',
+  'edu-p18-r01b',
+  'edu-p18-r02a',
+  'edu-p18-r02b',
+  'edu-p18-r03a',
+  'edu-p18-r03b',
+  'edu-p18-r04a',
+  'edu-p18-r04b',
+  'edu-p18-r05a',
+  'edu-p18-r05b',
+  'edu-p18-r06a',
+  'edu-p18-r06b',
+  'edu-paper-pa',
+  'edu-paper-pb',
+  'edu-paper-pc'].forEach((name) => {
+    redisAdminClient.sadd(DB_KEY, name);
+    updateDBState(name, 'activated', 'email', req.params.email, 'password', req.params.password);
+  })
+
+  res.end();
+});
+
 app.get('/api/admin/activate/:dbname', requireAdmin, (req: express.Request, res: express.Response) => {
   activateDbAndAddUsers(req.params.dbname);
   res.end();

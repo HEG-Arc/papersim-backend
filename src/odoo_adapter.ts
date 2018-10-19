@@ -126,7 +126,7 @@ export class OdooAdapter {
             this.odoo = new Odoo({
                 host: `${company.odoo.database}.${process.env.hosting || 'odoo.com'}`,
                 port: 443,
-                database: company.odoo.database,
+                database: process.env.db_underscore ? company.odoo.database.replace(/-/g, '_') : company.odoo.database,
                 username: company.odoo.username,
                 password: company.odoo.password,
                 protocol: 'https'

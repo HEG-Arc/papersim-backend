@@ -124,7 +124,7 @@ export class OdooAdapter {
     constructor(private game: Game, private company: Company) {
         try {
             this.odoo = new Odoo({
-                host: `${company.odoo.database}.odoo.com`,
+                host: `${company.odoo.database}.${process.env.hosting || 'odoo.com'}`,
                 port: 443,
                 database: company.odoo.database,
                 username: company.odoo.username,

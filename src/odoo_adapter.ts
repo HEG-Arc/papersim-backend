@@ -746,7 +746,7 @@ export class OdooAdapter {
 
     async checkUoM(uom: any): Promise<any> {
         return this.execute((resolve: Function, reject: Function) => {
-            this.odoo.search('product.uom', {
+            this.odoo.search('uom.uom', {
                 domain: objectToDomain(uom)
             }, this.createCacheResponseHandler(uom, resolve, reject));
         });
@@ -754,7 +754,7 @@ export class OdooAdapter {
 
     async createUoM(uom: any): Promise<any> {
         return this.execute((resolve: Function, reject: Function) => {
-            this.odoo.create('product.uom', uom, this.createCacheResponseHandler(uom, resolve, reject));
+            this.odoo.create('uom.uom', uom, this.createCacheResponseHandler(uom, resolve, reject));
         });
     }
 
@@ -1385,6 +1385,25 @@ export class OdooAdapter {
                 args: [[moId]]
             }, this.createDefaultResponseHandler(resolve, reject));
         });
+
+        await this.execute((resolve, reject) => {
+            this.odoo.rpc_call('/web/dataset/call_button', {
+                model: 'mrp.production',
+                method: 'open_produce_product',
+                args: [[moId]]
+            }, this.createDefaultResponseHandler(resolve, reject));
+        });
+
+        console.log('onchange');
+        await this.execute((resolve, reject) => {
+            this.odoo.rpc_call('/web/dataset/call_kw', {
+                model: 'mrp.production',
+                method: 'onchange',
+                args: [[], mo]
+            }, this.createDefaultResponseHandler(resolve, reject));
+        });
+
+
         // produce
         let produceId = await this.execute((resolve, reject) => {
             this.odoo.context.active_model =  "mrp.production";
@@ -1396,7 +1415,7 @@ export class OdooAdapter {
 			    product_qty: quantityProduced,
 			    product_tracking: 'none',
 			    lot_id: false,
-			    consume_line_ids: []
+			    produce_line_ids: []
             }, this.createDefaultResponseHandler(resolve, reject));
         });
         delete this.odoo.context.active_model;
@@ -1405,7 +1424,6 @@ export class OdooAdapter {
         console.log('produceId', produceId);
         //produce button
         await this.execute((resolve, reject) => {
-
             this.odoo.rpc_call('/web/dataset/call_button', {
                 model: 'mrp.product.produce',
                 method: 'do_produce',
@@ -1421,6 +1439,7 @@ export class OdooAdapter {
                 date_finished: currentDayTime
             }, this.createDefaultResponseHandler(resolve, reject));
         });
+        /*
         //postinventorybutton
         console.log('post inventory');
         await this.execute((resolve, reject) => {
@@ -1430,7 +1449,7 @@ export class OdooAdapter {
                 args: [[moId]]
             }, this.createDefaultResponseHandler(resolve, reject));
         });
-
+        */
         //buttondone
         console.log('production done');
         await this.execute((resolve, reject) => {

@@ -23,6 +23,7 @@ export function createDB(name: string, email: string): Promise<string> {
           await page.goto("https://www.odoo.com/fr_FR/trial");
           await page.waitFor(1000);
           await page.click('[data-app="account"]');
+          await page.click('.openerp_enterprise_validate_trial');
           await page.waitFor(5000);
           await page.type('[name="username"]', "Admin");
           await page.type('[name="email"]', email);
